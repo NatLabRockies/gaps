@@ -6696,6 +6696,50 @@ packages:
   - pkg:pypi/nh3?source=hash-mapping
   size: 603343
   timestamp: 1771078206376
+- pypi: ./
+  name: nlr-gaps
+  version: 0.8.12.dev15+ge5e924373.d20260214
+  sha256: 454b58ae9a65d812027658ad7556f04b55540312c4b3cdebf55afe135825c39c
+  requires_dist:
+  - click>=8.1.8
+  - colorama>=0.4.6
+  - nlr-rex>=0.5.0
+  - numpy>=2.0.2,<3
+  - numpydoc>=1.8.0
+  - pandas>=2.2.3,<3
+  - psutil>=7.0.0
+  - pyjson5>=1.6.4
+  - pyyaml>=6.0.2
+  - sphinx>=7.4.7
+  - sphinx-click>=6.0.0
+  - sphinx-copybutton>=0.5.2
+  - sphinx-tabs>=3.4.1
+  - sphinxcontrib-mermaid>=1.0.0
+  - tabulate>=0.9.0
+  - toml>=0.10.2
+  - ipython>=8.18.1,<9 ; extra == 'dev'
+  - jupyter>=1.1.1,<2 ; extra == 'dev'
+  - pipreqs>=0.4.13,<0.5 ; extra == 'dev'
+  - ruff>=0.14.14,<0.15 ; extra == 'dev'
+  - flaky>=3.8.1,<4 ; extra == 'test'
+  - h5py>=3.13.0,<4 ; extra == 'test'
+  - pytest>=8.3.5,<9 ; extra == 'test'
+  - pytest-cases>=3.8.6,<4 ; extra == 'test'
+  - pytest-cov>=3.0 ; extra == 'test'
+  - pytest-profiling>=1.7.0,<2 ; extra == 'test'
+  - pytest-xdist>=3.0 ; extra == 'test'
+  - snakeviz>=2.2.2,<3 ; extra == 'test'
+  - tox>=4.25.0,<5 ; extra == 'test'
+  - ghp-import>=2.1 ; extra == 'doc'
+  - make>=0.1 ; extra == 'doc'
+  - myst-parser>=3.0.1,<4 ; extra == 'doc'
+  - pandoc>=2.4,<3 ; extra == 'doc'
+  - pydata-sphinx-theme>=0.16.1,<0.17 ; extra == 'doc'
+  - setuptools>=80.1.0,<81 ; extra == 'doc'
+  - build>=1.2.2,<2 ; extra == 'build'
+  - pkginfo>=1.12.1.2,<2 ; extra == 'build'
+  - twine>=6.1.0,<7 ; extra == 'build'
+  requires_python: '>=3.9'
 - pypi: https://files.pythonhosted.org/packages/0a/08/b83b94a2b10ee7d27dddff4812a188e6669e520dafccb590613a90fa9d76/nlr_rex-0.5.0-py3-none-any.whl
   name: nlr-rex
   version: 0.5.0
@@ -6758,50 +6802,6 @@ packages:
   - pkg:pypi/notebook-shim?source=hash-mapping
   size: 16817
   timestamp: 1733408419340
-- pypi: ./
-  name: nrel-gaps
-  version: 0.8.12.dev14+gc844c25ff.d20260214
-  sha256: 4342c1338be774cb9d7d4638e302d6f74e5391db0900edb17df1cb4cbbea2237
-  requires_dist:
-  - click>=8.1.8
-  - colorama>=0.4.6
-  - nlr-rex>=0.5.0
-  - numpy>=2.0.2,<3
-  - numpydoc>=1.8.0
-  - pandas>=2.2.3,<3
-  - psutil>=7.0.0
-  - pyjson5>=1.6.4
-  - pyyaml>=6.0.2
-  - sphinx>=7.4.7
-  - sphinx-click>=6.0.0
-  - sphinx-copybutton>=0.5.2
-  - sphinx-tabs>=3.4.1
-  - sphinxcontrib-mermaid>=1.0.0
-  - tabulate>=0.9.0
-  - toml>=0.10.2
-  - ipython>=8.18.1,<9 ; extra == 'dev'
-  - jupyter>=1.1.1,<2 ; extra == 'dev'
-  - pipreqs>=0.4.13,<0.5 ; extra == 'dev'
-  - ruff>=0.14.14,<0.15 ; extra == 'dev'
-  - flaky>=3.8.1,<4 ; extra == 'test'
-  - h5py>=3.13.0,<4 ; extra == 'test'
-  - pytest>=8.3.5,<9 ; extra == 'test'
-  - pytest-cases>=3.8.6,<4 ; extra == 'test'
-  - pytest-cov>=3.0 ; extra == 'test'
-  - pytest-profiling>=1.7.0,<2 ; extra == 'test'
-  - pytest-xdist>=3.0 ; extra == 'test'
-  - snakeviz>=2.2.2,<3 ; extra == 'test'
-  - tox>=4.25.0,<5 ; extra == 'test'
-  - ghp-import>=2.1 ; extra == 'doc'
-  - make>=0.1 ; extra == 'doc'
-  - myst-parser>=3.0.1,<4 ; extra == 'doc'
-  - pandoc>=2.4,<3 ; extra == 'doc'
-  - pydata-sphinx-theme>=0.16.1,<0.17 ; extra == 'doc'
-  - setuptools>=80.1.0,<81 ; extra == 'doc'
-  - build>=1.2.2,<2 ; extra == 'build'
-  - pkginfo>=1.12.1.2,<2 ; extra == 'build'
-  - twine>=6.1.0,<7 ; extra == 'build'
-  requires_python: '>=3.9'
 - conda: https://conda.anaconda.org/conda-forge/linux-64/numpy-2.4.2-py314h2b28147_1.conda
   sha256: 1d8377c8001c15ed12c2713b723213474b435706ab9d34ede69795d64af9e94d
   md5: 4ea6b620fdf24a1a0bc4f1c7134dfafb

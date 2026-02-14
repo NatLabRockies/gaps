@@ -6,19 +6,19 @@ requires = [
 build-backend = 'setuptools.build_meta'
 
 [project]
-name="NREL-gaps"
+name="NLR-GAPs"
 dynamic = ["version"]
-description = "National Renewable Energy Laboratory's (NREL's) Geospatial Analysis Pipelines (GAPs) framework"
+description = "National Laboratory of the Rockies' (NLR's) Geospatial Analysis Pipelines (GAPs) framework"
 readme = "README.rst"
 authors = [
-  {name = "Paul Pinchuk", email = "ppinchuk@nrel.gov"},
+  {name = "Paul Pinchuk", email = "ppinchuk@nlr.gov"},
 ]
 maintainers = [
-  {name = "Paul Pinchuk", email = "ppinchuk@nrel.gov"},
-  {name = "Grant Buster", email = "gbuster@nrel.gov"},
+  {name = "Paul Pinchuk", email = "ppinchuk@nlr.gov"},
+  {name = "Grant Buster", email = "gbuster@nlr.gov"},
 ]
 license = "BSD-3-Clause"
-keywords = ["gaps", "NREL"]
+keywords = ["gaps", "NLR"]
 requires-python = ">= 3.9"
 classifiers=[
   "Development Status :: 4 - Beta",
@@ -84,9 +84,9 @@ build = [
 
 
 [project.urls]
-homepage = "https://github.com/NREL/gaps"
-documentation = "https://nrel.github.io/gaps/"
-repository = "https://github.com/NREL/gaps"
+homepage = "https://github.com/NatLabRockies/gaps"
+documentation = "https://natlabrockies.github.io/gaps/"
+repository = "https://github.com/NatLabRockies/gaps"
 
 [project.scripts]
 gaps = "gaps._cli:main"
@@ -104,7 +104,7 @@ channels = ["conda-forge", "anaconda", "main"]
 platforms = ["osx-arm64", "osx-64", "linux-64", "win-64"]
 
 [tool.pixi.pypi-dependencies]
-NREL-gaps = { path = ".", editable = true }
+NLR-gaps = { path = ".", editable = true }
 
 [tool.pixi.environments]
 default = { solve-group = "default" }

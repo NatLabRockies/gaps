@@ -7,11 +7,11 @@ Installing from PyPI
 ~~~~~~~~~~~~~~~~~~~~
 
 GAPs can be installed via pip from
-`PyPI <https://pypi.org/project/NREL-gaps>`__.
+`PyPI <https://pypi.org/project/NLR-gaps>`__.
 
 .. code-block:: shell
 
-    pip install nrel-gaps
+    pip install nlr-gaps
 
 .. note::
     You must have ``pip>=19.3`` to install from PyPI.
@@ -51,8 +51,8 @@ or `miniconda <https://www.anaconda.com/docs/getting-started/miniconda/main>`__ 
 package/environment manager.
 
 1. Clone the `gaps` repository.
-    - Using ssh: :code:`git clone git@github.com:NREL/gaps.git`
-    - Using https: :code:`git clone https://github.com/NREL/gaps.git`
+    - Using ssh: :code:`git clone git@github.com:NatLabRockies/gaps.git`
+    - Using https: :code:`git clone https://github.com/NatLabRockies/gaps.git`
 
 2. Create and activate  the ``gaps`` environment and install the package:
     1) Create a conda env: ``conda create -n gaps python=3.13``

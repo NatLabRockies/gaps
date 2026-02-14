@@ -52,15 +52,15 @@ class HardwareOption(CaseInsensitiveEnum):
     LOCAL = "local"
     """Local execution"""
     KESTREL = "kestrel"
-    """NREL's Kestrel HPC. Assumes SLURM scheduler"""
+    """NLR's Kestrel HPC. Assumes SLURM scheduler"""
     EAGLE = "eagle"
-    """NREL's Eagle HPC. Assumes SLURM scheduler"""
+    """NLR's Eagle HPC. Assumes SLURM scheduler"""
     AWSPC = "awspc"
     """AWS Parallel Cluster. Assumes SLURM scheduler"""
     SLURM = "slurm"
     """Fallback value for any HPC system that runs SLURM"""
     PEREGRINE = "peregrine"
-    """NREL's Peregrine HPC. Assumes PBS scheduler"""
+    """NLR's Peregrine HPC. Assumes PBS scheduler"""
 
     @classmethod
     def _new_post_hook(cls, obj, value):

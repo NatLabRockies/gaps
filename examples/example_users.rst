@@ -25,7 +25,7 @@ directory with its own set of configuration files.
 
 The Basics
 ----------
-For the examples shown here, we will use the `reV <https://github.com/NREL/reV>`_ model
+For the examples shown here, we will use the `reV <https://github.com/NatLabRockies/reV>`_ model
 CLI in particular, but the general concepts that will be presented can be applied to any
 GAPs-powered model. If you wish to follow along with these examples using your
 own model, simply replace ``reV`` with your model's CLI name in the command line calls.
@@ -287,7 +287,7 @@ control option, please refer to ``reV generation --help`` (or the help section o
 in your model). Here, we will focus on only the essential inputs.
 
 First, let's change the ``option`` to ``"kestrel"``. This will enable us to run the
-pipeline on NREL's Kestrel HPC instead of our local machine (although if you **do** want
+pipeline on NLR's Kestrel HPC instead of our local machine (although if you **do** want
 to execute a pipeline step locally, simply leave the ``option`` set to "local" and remove
 all inputs up to ``max_workers``). We will also configure the allocation and the walltime (specified as
 an integer or float in hours). If your model supports it, you can also define ``max_workers``, which
@@ -975,7 +975,7 @@ tricky to get used to at first, this does allow you to use ``batch`` to parametr
 like dictionaries (e.g. ``"{'dset': 'big_brown_bat', 'method': 'sum', 'value': 0}"``).
 
 
-.. Note:: For more about ``batch``, see the `reVX setbacks batched execution example <https://github.com/NREL/reVX/tree/main/reVX/setbacks#batched-execution>`_, which is powered by GAPs.
+.. Note:: For more about ``batch``, see the `reVX setbacks batched execution example <https://github.com/NatLabRockies/reVX/tree/main/reVX/setbacks#batched-execution>`_, which is powered by GAPs.
 
 
 Known Limitations
@@ -997,4 +997,4 @@ listed below and may or may not be addressed in a future update to ``batch`` fun
 Questions?
 ----------
 If you run into any issues or questions while executing a GAPs-powered model, please reach out to
-Paul Pinchuk (ppinchuk@nrel.gov).
+Paul Pinchuk (ppinchuk@nlr.gov).

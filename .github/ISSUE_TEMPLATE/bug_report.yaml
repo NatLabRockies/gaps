@@ -13,7 +13,7 @@ body:
           required: true
         - label: >
             I have confirmed this bug exists on the
-            [latest version](https://github.com/NREL/gaps/releases/latest) of GAPs.
+            [latest version](https://github.com/NatLabRockies/gaps/releases/latest) of GAPs.
           required: true
         - label: >
             I have confirmed this bug exists on the main branch of GAPs.
@@ -72,4 +72,4 @@ body:
     attributes:
       label: Charge code
       placeholder: >
-        If you are at NREL and fixing this bug is urgent, please provide a charge code
+        If you are at NLR and fixing this bug is urgent, please provide a charge code

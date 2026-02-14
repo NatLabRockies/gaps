@@ -10,7 +10,7 @@ body:
       options:
         - label: >
             I have checked that the issue still exists on the latest versions of the docs
-            on `main` [here](https://nrel.github.io/gaps/)
+            on `main` [here](https://natlabrockies.github.io/gaps/)
           required: true
   - type: textarea
     id: location
@@ -19,8 +19,8 @@ body:
       description: >
         Please provide the location of the documentation, e.g. ``gaps.config.load_config`` or the
         URL of the documentation, e.g.
-        "https://nrel.github.io/gaps/_autosummary/gaps.config.load_config.html#gaps.config.load_config"
-      placeholder: https://nrel.github.io/gaps/_autosummary/gaps.config.load_config.html#gaps.config.load_config
+        "https://natlabrockies.github.io/gaps/_autosummary/gaps.config.load_config.html#gaps.config.load_config"
+      placeholder: https://natlabrockies.github.io/gaps/_autosummary/gaps.config.load_config.html#gaps.config.load_config
     validations:
       required: true
   - type: textarea
