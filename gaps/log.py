@@ -1,7 +1,7 @@
 """Logging utilities
 
 Some of the code in this module is borrowed from rex
-(https://github.com/NREL/rex).
+(https://github.com/NatLabRockies/rex).
 """
 
 import sys

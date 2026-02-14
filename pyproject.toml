@@ -6,19 +6,19 @@ requires = [
 build-backend = 'setuptools.build_meta'
 
 [project]
-name="NREL-gaps"
+name="NLR-GAPs"
 dynamic = ["version"]
-description = "National Renewable Energy Laboratory's (NREL's) Geospatial Analysis Pipelines (GAPs) framework"
+description = "National Laboratory of the Rockies' (NLR's) Geospatial Analysis Pipelines (GAPs) framework"
 readme = "README.rst"
 authors = [
-  {name = "Paul Pinchuk", email = "ppinchuk@nrel.gov"},
+  {name = "Paul Pinchuk", email = "ppinchuk@nlr.gov"},
 ]
 maintainers = [
-  {name = "Paul Pinchuk", email = "ppinchuk@nrel.gov"},
-  {name = "Grant Buster", email = "gbuster@nrel.gov"},
+  {name = "Paul Pinchuk", email = "ppinchuk@nlr.gov"},
+  {name = "Grant Buster", email = "gbuster@nlr.gov"},
 ]
 license = "BSD-3-Clause"
-keywords = ["gaps", "NREL"]
+keywords = ["gaps", "NLR"]
 requires-python = ">= 3.9"
 classifiers=[
   "Development Status :: 4 - Beta",
@@ -34,10 +34,10 @@ classifiers=[
 dependencies = [
   "click>=8.1.8",
   "colorama>=0.4.6",
-  "NREL-rex>=0.4.3",
-  "numpy>=2.0.2",
+  "NLR-rex>=0.5.0",
+  "numpy>=2.0.2,<3",
   "numpydoc>=1.8.0",
-  "pandas>=2.2.3",
+  "pandas>=2.2.3,<3",
   "psutil>=7.0.0",
   "pyjson5>=1.6.4",
   "pyyaml>=6.0.2",
@@ -55,7 +55,7 @@ dev = [
   "ipython>=8.18.1,<9",
   "jupyter>=1.1.1,<2",
   "pipreqs>=0.4.13,<0.5",
-  "ruff>=0.8.0,<0.9",
+  "ruff>=0.14.14,<0.15",
 ]
 test = [
   "flaky>=3.8.1,<4",
@@ -84,9 +84,9 @@ build = [
 
 
 [project.urls]
-homepage = "https://github.com/NREL/gaps"
-documentation = "https://nrel.github.io/gaps/"
-repository = "https://github.com/NREL/gaps"
+homepage = "https://github.com/NatLabRockies/gaps"
+documentation = "https://natlabrockies.github.io/gaps/"
+repository = "https://github.com/NatLabRockies/gaps"
 
 [project.scripts]
 gaps = "gaps._cli:main"
@@ -99,12 +99,12 @@ find = { include = ["gaps*"] }
 version_file = "gaps/_version.py"
 
 
-[tool.pixi.project]
+[tool.pixi.workspace]
 channels = ["conda-forge", "anaconda", "main"]
 platforms = ["osx-arm64", "osx-64", "linux-64", "win-64"]
 
 [tool.pixi.pypi-dependencies]
-NREL-gaps = { path = ".", editable = true }
+NLR-gaps = { path = ".", editable = true }
 
 [tool.pixi.environments]
 default = { solve-group = "default" }
@@ -115,25 +115,26 @@ build = { features = ["build"], solve-group = "default" }
 
 [tool.pixi.tasks]
 
-
 [tool.pixi.feature.dev.tasks]
+lint = "ruff check ./gaps"
+format = "ruff format ./gaps"
+
+[tool.pixi.feature.test.tasks]
 tests = "pytest --durations=20 tests"
 
 [tool.pixi.feature.doc.tasks]
-make-html = { cmd = "make html", cwd = "docs"}
+python-docs = { cmd = "make clean html", cwd = "docs", env = { SPHINXOPTS = "--fail-on-warning --keep-going --nitpicky" }}
 
 [tool.pixi.feature.build.tasks]
 build-wheels = "uv build --sdist --wheel --out-dir dist/ ."
-check-wheels = { cmd = ["twine", "check", "dist/*"], depends-on = ["build-wheels"] }
-upload-wheels = { cmd = ["twine", "upload", "dist/*"], depends-on = ["check-wheels"] }
 
 [tool.pixi.dependencies]
 python = ">=3.9"
 click = ">=8.1.8"
 colorama = ">=0.4.6"
-numpy = ">=2.0.2"
+numpy = ">=2.0.2,<3"
 numpydoc = ">=1.8.0"
-pandas = ">=2.2.3"
+pandas = ">=2.2.3,<3"
 psutil = ">=7.0.0"
 pyyaml = ">=6.0.2"
 sphinx = ">=7.4.7"
@@ -148,7 +149,7 @@ toml = ">=0.10.2"
 ipython = ">=8.18.1,<9"
 jupyter = ">=1.1.1,<2"
 pipreqs = ">=0.4.13,<0.5"
-ruff = ">=0.8.0,<0.9"
+ruff = ">=0.14.14,<0.15"
 frozenlist = ">=1.7,<2"
 
 [tool.pixi.feature.test.dependencies]
@@ -237,6 +238,7 @@ ignore = [
   "PYI024", # collections-named-tuple
   "RUF012", # mutable-class-default
   "RUF031", # incorrectly-parenthesized-tuple-in-subscript
+  "RUF067", # non-empty-init-module
   "S101", # assert
   "S324", # hashlib-insecure-hash-function
   "S403", # suspicious-pickle-import

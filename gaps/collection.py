@@ -521,10 +521,9 @@ class Collector:
                 )
                 global_attrs[f"{self.command_name}_config"] = "{}"
                 if self.config_file and Path(self.config_file).exists():
-                    with Path(self.config_file).open(
-                        "r", encoding="utf-8"
-                    ) as fh:
-                        global_attrs[f"{self.command_name}_config"] = fh.read()
+                    global_attrs[f"{self.command_name}_config"] = Path(
+                        self.config_file
+                    ).read_text(encoding="utf-8")
 
                 global_attrs[f"{self.command_name}_collect_pattern"] = (
                     self.collect_pattern
