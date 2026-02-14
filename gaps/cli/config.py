@@ -27,10 +27,12 @@ _CMD_LIST = [
     "from gaps.cli.config import run_with_status_updates",
     "from {run_func_module} import {run_func_name}",
     'su_args = "{project_dir}", "{pipeline_step}", "{job_name}"',
-    "run_with_status_updates("
-    "   {run_func_name}, {node_specific_config}, {logging_options}, su_args, "
-    "   {exclude_from_status}"
-    ")",
+    (
+        "run_with_status_updates("
+        "   {run_func_name}, {node_specific_config}, {logging_options}, "
+        "   su_args, {exclude_from_status}"
+        ")"
+    ),
 ]
 TAG = "_j"
 MAX_AU_BEFORE_WARNING = {
