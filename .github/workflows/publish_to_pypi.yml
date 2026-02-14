@@ -25,11 +25,12 @@ jobs:
       with:
         pixi-version: v0.62.2
         locked: true
-        cache: false
-        environments: build
+        cache: true
+        cache-write: ${{ github.ref == 'refs/heads/main' }}
+        environments: dev
 
     - name: Build
-      run: pixi run -e pbuild build-wheels
+      run: pixi run -e dev build-wheels
 
     - name: Publish package distributions to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
