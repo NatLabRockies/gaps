@@ -8,10 +8,10 @@ you are in the right place. The following examples start with a basic example an
 progressively become more advanced to demonstrate the full power of this framework.
 
 If you prefer to explore real-world examples instead, feel free to check
-out `reV <https://github.com/NREL/reV>`_, `reVX <https://github.com/NREL/reVX>`_,
-or `PVDegradationTools <https://github.com/NREL/PVDegradationTools>`_.
+out `reV <https://github.com/NatLabRockies/reV>`_, `reVX <https://github.com/NatLabRockies/reVX>`_,
+or `PVDegradationTools <https://github.com/NatLabRockies/PVDegradationTools>`_.
 
-Don't forget to refer to the `API documentation <https://nrel.github.io/gaps/_autosummary/gaps.html>`_
+Don't forget to refer to the `API documentation <https://natlabrockies.github.io/gaps/_autosummary/gaps.html>`_
 for details regarding inputs to the GAPs function calls described below.
 
 Basic Setup
@@ -75,7 +75,7 @@ our function during the call.
 Finally, we "request" the ``tag`` input from GAPs. This is a special input that GAPs can
 pass to our function call (you can "request" it by including it in the function signature).
 To see a full list of the parameters you can request from GAPs, check out the documentation
-for `CLICommandFromFunction <https://nrel.github.io/gaps/_autosummary/gaps.cli.command.CLICommandFromFunction.html>`_.
+for `CLICommandFromFunction <https://natlabrockies.github.io/gaps/_autosummary/gaps.cli.command.CLICommandFromFunction.html>`_.
 The ``tag`` value is a unique string that you can append to your output file to make it unique
 compared to other nodes running the same function. This way, there is no race condition for
 writing data when the user executes the model on multiple HPC nodes in parallel (each node has
@@ -169,7 +169,7 @@ into a single output file. The remaining commands offer valuable functionality f
 command-line interface.
 
 For detailed instructions on executing your model using this CLI, please refer to the
-`How to Run a Model Powered by GAPs <https://nrel.github.io/gaps/misc/examples.users.html>`_ example.
+`How to Run a Model Powered by GAPs <https://natlabrockies.github.io/gaps/misc/examples.users.html>`_ example.
 
 
 Multiprocessing
@@ -245,14 +245,14 @@ and the user submits 1000 points for execution on the node, this submission proc
 the input array, necessitating at least 100 GB of RAM for processing. Therefore, it's advisable to minimize
 the memory footprint of your model inputs as much as possible, such as by loading the data within the ``run_model``
 function itself whenever feasible. For alternative strategies to address this issue, consider exploring the chunking
-approach employed by `reVX exclusions calculators <https://github.com/NREL/reVX/blob/2dd05402c9c05ca0bf7f0e5bc2849ede0d0bc3cb/reVX/utilities/exclusions.py#L323-L367>`_.
+approach employed by `reVX exclusions calculators <https://github.com/NatLabRockies/reVX/blob/2dd05402c9c05ca0bf7f0e5bc2849ede0d0bc3cb/reVX/utilities/exclusions.py#L323-L367>`_.
 
 When submitting the futures, we store them in a dictionary for later collection using the ``as_completed`` function.
 This approach enables us to retain some metadata alongside each future object. Specifically, we store the site GID
 (please note that GAPs requires users to specify a ``gid`` column in their project points CSV, which is typical for
 models relying on WTK/NSRDB/Sup3rCC data) corresponding to each future, allowing us to place the data in the appropriate
 location in the output array. We obtain the index into the output array using the
-`ProjectPoints.index <https://nrel.github.io/gaps/_autosummary/gaps.project_points.ProjectPoints.html#gaps.project_points.ProjectPoints.index>`_
+`ProjectPoints.index <https://natlabrockies.github.io/gaps/_autosummary/gaps.project_points.ProjectPoints.html#gaps.project_points.ProjectPoints.index>`_
 function and immediately store the result in the output HDF5 file.
 
 Upon completing all processing, we return the path to the output file as usual. With just a few additional lines of code,
@@ -377,7 +377,7 @@ Note that GAPs has not yet had a chance to initialize a logger for your CLI, so 
 logger manually if you would like to display/capture the log outputs during job kickoff. GAPs does provide
 some useful parameters to assist you with logger initialization: ``job_name``, ``log_directory``,
 and ``verbose``. See the documentation for
-`CLICommandFromFunction <https://nrel.github.io/gaps/_autosummary/gaps.cli.command.CLICommandFromFunction.html>`_.
+`CLICommandFromFunction <https://natlabrockies.github.io/gaps/_autosummary/gaps.cli.command.CLICommandFromFunction.html>`_.
 for more details on these parameters. Here is what a typical pre-processing functions with logging setup
 might look like:
 
@@ -708,7 +708,7 @@ point to your CLI. Consequently, they can execute your commands like this:
     ...
 
 
-For a real-world example of this, check out the `reV setup.py file <https://github.com/NREL/reV/blob/main/setup.py>`_.
+For a real-world example of this, check out the `reV setup.py file <https://github.com/NatLabRockies/reV/blob/main/setup.py>`_.
 
 Another essential aspect of finalizing your package is creating documentation for your users. Fortunately, GAPs
 simplifies this process for your CLI significantly. All you need to do is document all of your model parameters
@@ -717,10 +717,10 @@ GAPs will collect your documentation and use it for the ``--help`` invocation fo
 
 If you are using Sphinx to generate your documentation, you can utilize `sphinx-click <https://sphinx-click.readthedocs.io/en/latest/>`_
 to render the CLI documentation for you in a visually appealing format. For an example of how to do this, refer to the reV documentation
-`setup <https://github.com/NREL/reV/tree/main/docs>`_ and `final result <https://nrel.github.io/reV/_cli/cli.html>`_.
+`setup <https://github.com/NatLabRockies/reV/tree/main/docs>`_ and `final result <https://natlabrockies.github.io/reV/_cli/cli.html>`_.
 
 
 Questions?
 ----------
 If you run into any issues or questions while coupling GAPs with your model, please reach out to
-Paul Pinchuk (ppinchuk@nrel.gov).
+Paul Pinchuk (ppinchuk@nrl.gov).

@@ -23,8 +23,8 @@ sys.path.insert(0, os.path.abspath("../../"))
 # -- Project information -----------------------------------------------------
 
 project = "gaps"
-copyright = "2023, Alliance for Sustainable Energy, LLC"
-author = "NREL: Paul Pinchuk, Grant Buster"
+copyright = "2026, Alliance for Energy Innovation, LLC"
+author = "NLR: Paul Pinchuk, Grant Buster"
 
 pkg = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 pkg = os.path.dirname(pkg)
@@ -70,7 +70,7 @@ intersphinx_mapping = {
     "sqlalchemy": ("https://docs.sqlalchemy.org/en/20/", None),
     "psycopg": ("https://www.psycopg.org/psycopg3/docs", None),
     "plotly": ("https://plotly.com/python-api-reference", None),
-    "rex": ("https://nrel.github.io/rex", None),
+    "rex": ("https://natlabrockies.github.io/rex", None),
     "xlsxwriter": ("https://xlsxwriter.readthedocs.io", None),
 }
 
@@ -127,7 +127,7 @@ html_css_file = ["custom.css"]
 
 html_context = {
     "display_github": True,
-    "github_user": "nrel",
+    "github_user": "nlr",
     "github_repo": "gaps",
     "github_version": "main",
     "conf_py_path": "/docs/source/",
