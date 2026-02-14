@@ -127,7 +127,7 @@ html_css_file = ["custom.css"]
 
 html_context = {
     "display_github": True,
-    "github_user": "nlr",
+    "github_user": "NatLabRockies",
     "github_repo": "gaps",
     "github_version": "main",
     "conf_py_path": "/docs/source/",
