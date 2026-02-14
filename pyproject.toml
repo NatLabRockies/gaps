@@ -55,7 +55,7 @@ dev = [
   "ipython>=8.18.1,<9",
   "jupyter>=1.1.1,<2",
   "pipreqs>=0.4.13,<0.5",
-  "ruff>=0.8.0,<0.9",
+  "ruff>=0.14.14,<0.15",
 ]
 test = [
   "flaky>=3.8.1,<4",
@@ -99,7 +99,7 @@ find = { include = ["gaps*"] }
 version_file = "gaps/_version.py"
 
 
-[tool.pixi.project]
+[tool.pixi.workspace]
 channels = ["conda-forge", "anaconda", "main"]
 platforms = ["osx-arm64", "osx-64", "linux-64", "win-64"]
 
@@ -115,17 +115,18 @@ build = { features = ["build"], solve-group = "default" }
 
 [tool.pixi.tasks]
 
-
 [tool.pixi.feature.dev.tasks]
+lint = "ruff check ./gaps"
+format = "ruff format ./gaps"
+
+[tool.pixi.feature.test.tasks]
 tests = "pytest --durations=20 tests"
 
 [tool.pixi.feature.doc.tasks]
-make-html = { cmd = "make html", cwd = "docs"}
+python-docs = { cmd = "make clean html", cwd = "docs", env = { SPHINXOPTS = "--fail-on-warning --keep-going --nitpicky" }}
 
 [tool.pixi.feature.build.tasks]
 build-wheels = "uv build --sdist --wheel --out-dir dist/ ."
-check-wheels = { cmd = ["twine", "check", "dist/*"], depends-on = ["build-wheels"] }
-upload-wheels = { cmd = ["twine", "upload", "dist/*"], depends-on = ["check-wheels"] }
 
 [tool.pixi.dependencies]
 python = ">=3.9"
@@ -148,7 +149,7 @@ toml = ">=0.10.2"
 ipython = ">=8.18.1,<9"
 jupyter = ">=1.1.1,<2"
 pipreqs = ">=0.4.13,<0.5"
-ruff = ">=0.8.0,<0.9"
+ruff = ">=0.14.14,<0.15"
 frozenlist = ">=1.7,<2"
 
 [tool.pixi.feature.test.dependencies]
@@ -237,6 +238,7 @@ ignore = [
   "PYI024", # collections-named-tuple
   "RUF012", # mutable-class-default
   "RUF031", # incorrectly-parenthesized-tuple-in-subscript
+  "RUF067", # non-empty-init-module
   "S101", # assert
   "S324", # hashlib-insecure-hash-function
   "S403", # suspicious-pickle-import
