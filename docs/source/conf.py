@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.abspath("../../"))
 # -- Project information -----------------------------------------------------
 
 project = "gaps"
-copyright = "2023, Alliance for Sustainable Energy, LLC"
+copyright = "2026, Alliance for Energy Innovation, LLC"
 author = "NLR: Paul Pinchuk, Grant Buster"
 
 pkg = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
