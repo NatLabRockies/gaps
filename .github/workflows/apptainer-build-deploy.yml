@@ -22,7 +22,7 @@ jobs:
         #     artifact_name: mything
         #     asset_name: mything-macos-amd64
     permissions:
-      write-all
+      contents: write
 
     container:
       image: quay.io/singularity/singularity:v3.8.1
@@ -32,6 +32,10 @@ jobs:
 
       - name: Check out code for the container builds
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
 
       - name: Build Container
         run: |
@@ -43,7 +47,7 @@ jobs:
     #        singularity push container.sif oras://ghcr.io/${GITHUB_REPOSITORY}:${tag}
 
       - name: Upload container to release
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@6b7fa9f267e90b50a19fef07b3596790bb941741
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ matrix.artifact_name }}

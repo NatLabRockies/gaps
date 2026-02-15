@@ -723,4 +723,4 @@ to render the CLI documentation for you in a visually appealing format. For an e
 Questions?
 ----------
 If you run into any issues or questions while coupling GAPs with your model, please reach out to
-Paul Pinchuk (ppinchuk@nrl.gov).
+Paul Pinchuk (ppinchuk@nlr.gov).

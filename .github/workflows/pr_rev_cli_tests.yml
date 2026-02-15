@@ -5,21 +5,27 @@ on: pull_request
 jobs:
   rev_cli_tests:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
     - name: checkout gaps
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         ref: ${{ github.event.pull_request.head.ref }}
         fetch-depth: 1
+        fetch-tags: true
         path: gaps
+        persist-credentials: false
     - name: checkout reV
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         repository: NatLabRockies/reV
         fetch-depth: 1
         path: reV
+        fetch-tags: true
+        persist-credentials: false
     - name: Set up Python
-      uses: conda-incubator/setup-miniconda@v3
+      uses: conda-incubator/setup-miniconda@fc2d68f6413eb2d87b895e92f8584b5b94a10167
       with:
         auto-update-conda: true
         python-version: 3.9

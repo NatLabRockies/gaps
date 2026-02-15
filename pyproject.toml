@@ -104,7 +104,7 @@ channels = ["conda-forge", "anaconda", "main"]
 platforms = ["osx-arm64", "osx-64", "linux-64", "win-64"]
 
 [tool.pixi.pypi-dependencies]
-NLR-gaps = { path = ".", editable = true }
+NLR-GAPs = { path = ".", editable = true }
 
 [tool.pixi.environments]
 default = { solve-group = "default" }
