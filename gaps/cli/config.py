@@ -567,7 +567,7 @@ def run_with_status_updates(
 
     status_update_args : iterable
         An iterable containing the first three initializer arguments for
-        :class:`StatusUpdates`.
+        :class:`~gaps.status.StatusUpdates`.
     exclude : collection | None
         A collection (list, set, dict, etc.) of keys that should be
         excluded from the job status file that is written before/after

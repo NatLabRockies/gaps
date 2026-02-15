@@ -389,6 +389,7 @@ class CommandDocumentation:
     """
 
     REQUIRED_TAG = "[REQUIRED]"
+    """Tag to indicate required parameters in generated templates"""
 
     def __init__(self, *functions, skip_params=None, is_split_spatially=False):
         """

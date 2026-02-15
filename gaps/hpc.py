@@ -29,9 +29,9 @@ class HpcJobManager(ABC):
     """Abstract HPC job manager framework"""
 
     # set a max job name length, will raise error if too long.
-    MAX_NAME_LEN = 100
+    _MAX_NAME_LEN = 100
 
-    SHELL_FILENAME_FMT = "{}.sh"
+    _SHELL_FILENAME_FMT = "{}.sh"
 
     def __init__(self, user=None, queue_dict=None):
         """
@@ -206,7 +206,7 @@ class HpcJobManager(ABC):
         self._setup_submission(name, **kwargs)
 
         out, err = submit(
-            f"{self.COMMANDS.SUBMIT} {self.SHELL_FILENAME_FMT.format(name)}"
+            f"{self.COMMANDS.SUBMIT} {self._SHELL_FILENAME_FMT.format(name)}"
         )
         out = self._teardown_submission(name, out, err, keep_sh=keep_sh)
         return out, err
@@ -222,10 +222,10 @@ class HpcJobManager(ABC):
 
     def _validate_name_length(self, name):
         """Validate that the name does not exceed max length"""
-        if len(name) > self.MAX_NAME_LEN:
+        if len(name) > self._MAX_NAME_LEN:
             msg = (
                 f"Cannot submit job with name longer than "
-                f"{self.MAX_NAME_LEN} chars: {name!r}"
+                f"{self._MAX_NAME_LEN} chars: {name!r}"
             )
             raise gapsValueError(msg)
 
@@ -236,12 +236,12 @@ class HpcJobManager(ABC):
 
         script = self.make_script_str(name, **kwargs)
 
-        make_sh(self.SHELL_FILENAME_FMT.format(name), script)
+        make_sh(self._SHELL_FILENAME_FMT.format(name), script)
 
     def _teardown_submission(self, name, out, err, keep_sh=False):
         """Remove submission file and mark job as submitted"""
         if not keep_sh:
-            Path(self.SHELL_FILENAME_FMT.format(name)).unlink()
+            Path(self._SHELL_FILENAME_FMT.format(name)).unlink()
 
         if err:
             warn(
@@ -316,11 +316,13 @@ class PBS(HpcJobManager):
     """Subclass for PBS subprocess jobs"""
 
     COLUMN_HEADERS = Q_COLUMNS(NAME="Name", ID="Job id", STATUS="S")
+    """PBS output column header names"""
 
-    # String representing the submitted status for this manager
     Q_SUBMITTED_STATUS = "Q"
+    """String representing the submitted status for this manager"""
 
     COMMANDS = COMMANDS(SUBMIT="qsub", CANCEL="qdel")  # cspell:disable-line
+    """Submission and cancellation command names for this manager"""
 
     def query_queue(self):
         """Run the PBS qstat command and return the raw stdout string.
@@ -431,12 +433,15 @@ class SLURM(HpcJobManager):
 
     # cspell:disable-next-line
     COLUMN_HEADERS = Q_COLUMNS(NAME="NAME", ID="JOBID", STATUS="ST")
+    """SLURM output column names"""
 
     # String representing the submitted status for this manager
     Q_SUBMITTED_STATUS = "PD"
+    """String representing the submitted status for this manager"""
 
     # cspell:disable-next-line
     COMMANDS = COMMANDS(SUBMIT="sbatch", CANCEL="scancel")
+    """Submission and cancellation command names for this manager"""
 
     def query_queue(self):
         """Run the HPC queue command and return the raw stdout string.
@@ -449,7 +454,7 @@ class SLURM(HpcJobManager):
         """
         cmd = (
             f'squeue -u {self._user} --format="%.15i %.30P '
-            f'%.{self.MAX_NAME_LEN}j %.20u %.10t %.15M %.25R %q"'
+            f'%.{self._MAX_NAME_LEN}j %.20u %.10t %.15M %.25R %q"'
         )
         stdout, _ = submit(cmd)
         return _skip_q_rows(stdout)

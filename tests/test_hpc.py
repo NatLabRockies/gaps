@@ -1,8 +1,4 @@
-# -*- coding: utf-8 -*-
-# pylint: disable=too-many-locals
-"""
-GAPs HPC job managers tests.
-"""
+"""GAPs HPC job managers tests"""
 
 import shlex
 import subprocess
@@ -120,7 +116,7 @@ def test_job_name_too_long(manager):
     """Test submission fails if name too long."""
     hpc_manager = manager()
     with pytest.raises(gapsValueError):
-        hpc_manager.submit("".join(["a"] * (manager.MAX_NAME_LEN * 2)))
+        hpc_manager.submit("".join(["a"] * (manager._MAX_NAME_LEN * 2)))
 
 
 @pytest.mark.parametrize(
@@ -247,7 +243,7 @@ def test_hpc_submit(manager, q_str, kwargs, expectation, add_qos, monkeypatch):
 
     name = "submit_test"
     cmd_cache = []
-    fn_sh = Path(manager.SHELL_FILENAME_FMT.format(name))
+    fn_sh = Path(manager._SHELL_FILENAME_FMT.format(name))
 
     def _test_submit(cmd):
         cmd_cache.append(cmd)

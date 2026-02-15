@@ -111,6 +111,13 @@ pygments_style = "sphinx"
 # Avoid errors with self-signed certificates
 tls_verify = False
 
+# Avoid warning about api.rst not in TOC
+suppress_warnings = ["toc.not_included", "misc.highlighting_failure"]
+
+nitpick_ignore = [
+    ("py:class", "gaps.config._ConfigType"),
+]
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -207,6 +214,74 @@ texinfo_documents = [
         "Miscellaneous",
     ),
 ]
+
+
+def _skip_pydantic_methods(name, obj):
+    return name in {
+        "model_dump_json",
+        "model_json_schema",
+        "model_dump",
+        "model_construct",
+        "model_copy",
+        "model_fields",
+        "model_computed_fields",
+        "model_rebuild",
+        "model_parametrized_name",
+        "model_post_init",
+        "model_validate",
+        "model_validate_json",
+        "model_validate_strings",
+        "copy",
+        "construct",
+        "dict",
+        "from_orm",
+        "json",
+        "parse_file",
+        "parse_obj",
+        "parse_raw",
+        "schema",
+        "schema_json",
+        "update_forward_refs",
+        "validate",
+    } and "BaseModel" in str(obj)
+
+
+def _skip_builtin_methods(name, obj):
+    if name in {
+        "clear",
+        "pop",
+        "popitem",
+        "setdefault",
+        "update",
+    } and "MutableMapping" in str(obj):
+        return True
+
+    if name in {"items", "keys", "values"} and "Mapping" in str(obj):
+        return True
+
+    return name in {"copy", "get"} and "UserDict" in str(obj)
+
+
+def _skip_internal_api(name, obj):
+    if (getattr(obj, "__doc__", None) or "").startswith("[NOT PUBLIC API]"):
+        return True
+
+    return name in {"copy", "fromkeys"} and "Status" in str(obj)
+
+
+def _skip_member(app, what, name, obj, skip, options):
+    if (
+        _skip_internal_api(name, obj)
+        or _skip_builtin_methods(name, obj)
+        or _skip_pydantic_methods(name, obj)
+    ):
+        return True
+    return None
+
+
+def setup(app):
+    app.connect("autodoc-skip-member", _skip_member)
+
 
 # -- Extension configuration -------------------------------------------------
 

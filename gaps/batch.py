@@ -63,7 +63,7 @@ class BatchJob:
 
     @property
     def job_table(self):
-        """pd.DataFrame: Batch job summary table"""
+        """pandas.DataFrame: Batch job summary table"""
         jobs = []
         for job_tag, (arg_comb, file_set, set_tag) in self._sets.items():
             job_info = {k: str(v) for k, v in arg_comb.items()}
