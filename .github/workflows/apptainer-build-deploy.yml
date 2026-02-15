@@ -22,7 +22,7 @@ jobs:
         #     artifact_name: mything
         #     asset_name: mything-macos-amd64
     permissions:
-      write-all
+      contents: write
 
     container:
       image: quay.io/singularity/singularity:v3.8.1
