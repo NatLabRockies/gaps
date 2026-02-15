@@ -25,7 +25,7 @@ jobs:
       contents: write
 
     container:
-      image: quay.io/singularity/singularity:v3.8.1
+      image: apptainer/apptainer:1.2.5
       options: --privileged
 
     steps:
