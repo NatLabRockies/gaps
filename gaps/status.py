@@ -31,19 +31,46 @@ class StatusField(CaseInsensitiveEnum):
     """A collection of required status fields in a status file"""
 
     JOB_ID = "job_id"
+    """Key for Job ID from HPC scheduler"""
+
     JOB_STATUS = "job_status"
+    """Key for job status string"""
+
     PIPELINE_INDEX = "pipeline_index"
+    """Key for pipeline index of the job's pipeline step"""
+
     HARDWARE = "hardware"
+    """Key for hardware option that the job is running on"""
+
     QOS = "qos"
+    """Key for QOS option that the job is running with"""
+
     OUT_FILE = "out_file"
+    """Key for output file path of the job"""
+
     TIME_SUBMITTED = "time_submitted"
+    """Key for time that the job was submitted to the HPC scheduler"""
+
     TIME_START = "time_start"
+    """Key for time that the job started running on the HPC"""
+
     TIME_END = "time_end"
+    """Key for time that the job finished running on the HPC"""
+
     TOTAL_RUNTIME = "total_runtime"
+    """Key for total runtime of the job in seconds"""
+
     RUNTIME_SECONDS = "runtime_seconds"
+    """Key for runtime of the job in seconds"""
+
     MONITOR_PID = "monitor_pid"
+    """Key for PID of the monitoring process"""
+
     STDOUT_LOG = "stdout_log"
+    """Key for stdout log file path of the job"""
+
     STDOUT_ERR_LOG = "stdout_err_log"
+    """Key for stderr log file path of the job"""
 
 
 class HardwareOption(CaseInsensitiveEnum):
@@ -140,11 +167,22 @@ class StatusOption(CaseInsensitiveEnum):
     """A collection of job status options"""
 
     NOT_SUBMITTED = "not submitted"
+    """Not submitted to HPC scheduler"""
+
     SUBMITTED = "submitted"
+    """Submitted to HPC scheduler but not yet running"""
+
     RUNNING = "running"
+    """Running on HPC"""
+
     SUCCESSFUL = "successful"
+    """Finished running on HPC with a successful exit code"""
+
     FAILED = "failed"
+    """Finished running on HPC with a failed exit code"""
+
     COMPLETE = "complete"
+    """Pipeline is complete"""
 
     @classmethod
     def _new_post_hook(cls, obj, value):
@@ -219,9 +257,16 @@ class Status(UserDict):
         StatusField.QOS.value,
     ]
     HIDDEN_SUB_DIR = ".gaps"
+    """Subdirectory to store the GAPd status json file"""
+
     MONITOR_PID_FILE = "monitor_pid.json"
+    """JSON file that records the PID of the monitoring process"""
+
     JOB_STATUS_FILE = "jobstatus_{}.json"
+    """Filename pattern for individual job status files"""
+
     NAMED_STATUS_FILE = "{}_status.json"
+    """Main JSON status file containing all job statuses"""
 
     def __init__(self, status_dir):
         """Initialize `Status`.

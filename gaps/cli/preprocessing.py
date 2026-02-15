@@ -22,7 +22,8 @@ def split_project_points_into_ranges(config):
     ----------
     config : dict
         Run config. This config must have a "project_points" input that
-        can be used to initialize :class:`ProjectPoints`.
+        can be used to initialize
+        :class:`gaps.project_points.ProjectPoints`.
 
     Returns
     -------

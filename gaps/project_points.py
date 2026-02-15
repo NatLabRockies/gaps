@@ -24,14 +24,14 @@ def _parse_sites(points):
 
     Parameters
     ----------
-    points : int | str | pd.DataFrame | slice | list
+    points : int | str | pandas.DataFrame | slice | list
         Slice specifying project points, string pointing to a project
         points csv, or a DataFrame containing the effective csv
         contents. Can also be a single integer site value.
 
     Returns
     -------
-    df : pd.DataFrame
+    df : pandas.DataFrame
         DataFrame of sites (gids) with corresponding args
 
     Raises
@@ -60,7 +60,7 @@ class ProjectPoints:
 
         Parameters
         ----------
-        points : int | slice | list | tuple | str | pd.DataFrame | dict
+        points : int | slice | list | tuple | str | pandas.DataFrame
             Slice specifying project points, string pointing to a
             project points csv, or a DataFrame containing the effective
             csv contents. Can also be a single integer site value.
@@ -79,14 +79,14 @@ class ProjectPoints:
 
         Parameters
         ----------
-        points : int | str | pd.DataFrame | slice | list | dict
+        points : int | str | pandas.DataFrame | slice | list | dict
             Slice specifying project points, string pointing to a
             project points csv, or a DataFrame containing the effective
             csv contents. Can also be a single integer site value.
 
         Returns
         -------
-        df : pd.DataFrame
+        df : pandas.DataFrame
             DataFrame of sites (gids) with corresponding args
         """
         try:
@@ -129,7 +129,7 @@ class ProjectPoints:
 
         Returns
         -------
-        site : pd.Series
+        site : pandas.Series
             Pandas Series containing information for the site with the
             requested site_id.
         """
@@ -155,7 +155,7 @@ class ProjectPoints:
 
     @property
     def df(self):
-        """pd.DataFrame: Project points DataFrame of site info"""
+        """pandas.DataFrame: Project points DataFrame of site info"""
         return self._df
 
     @property
@@ -209,7 +209,7 @@ class ProjectPoints:
 
         Parameters
         ----------
-        df2 : pd.DataFrame
+        df2 : pandas.DataFrame
             DataFrame to be joined to the :attr:`df` attribute (this
             instance of project points DataFrame). This likely contains
             site-specific inputs that are to be passed to parallel
@@ -279,7 +279,7 @@ class ProjectPoints:
         split_range : 2-tuple
             Tuple containing the start and end index (iloc, not loc).
             Last index is not included.
-        points : int | slice | list | tuple | str | pd.DataFrame | dict
+        points : int | slice | list | tuple | str | pandas.DataFrame
             Slice specifying project points, string pointing to a
             project points csv, or a DataFrame containing the effective
             csv contents. Can also be a single integer site value.

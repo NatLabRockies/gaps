@@ -77,6 +77,7 @@ class JSONHandler(Handler):
     """JSON config file handler"""
 
     FILE_EXTENSION = "json"
+    """Expected file extension for JSON config files"""
 
     @classmethod
     def dump(cls, config, stream):
@@ -98,6 +99,7 @@ class JSON5Handler(Handler):
     """JSON5 config file handler"""
 
     FILE_EXTENSION = "json5"
+    """Expected file extension for JSON5 config files"""
 
     @classmethod
     def dump(cls, config, stream):
@@ -127,6 +129,7 @@ class YAMLHandler(Handler):
     """YAML config file handler"""
 
     FILE_EXTENSION = "yaml", "yml"
+    """Expected file extensions for YAML config files"""
 
     @classmethod
     def dump(cls, config, stream):
@@ -148,6 +151,7 @@ class TOMLHandler(Handler):
     """TOML config file handler"""
 
     FILE_EXTENSION = "toml"
+    """Expected file extension for TOML config files"""
 
     @classmethod
     def dump(cls, config, stream):
@@ -176,6 +180,7 @@ class _ConfigType(CaseInsensitiveEnum):
         obj.load = _CONFIG_HANDLER_REGISTRY[value].load
         obj.loads = _CONFIG_HANDLER_REGISTRY[value].loads
         obj.write = _CONFIG_HANDLER_REGISTRY[value].write
+        obj.__doc__ = f"{value} config"
         return obj
 
 
@@ -190,7 +195,7 @@ ConfigType = _ConfigType(
 
 
 def config_as_str_for_docstring(
-    config, config_type=ConfigType.JSON, num_spaces=12
+    config, config_type=str(ConfigType.JSON), num_spaces=12
 ):
     """Convert a config into a string to be used within a docstring.
 
@@ -202,11 +207,11 @@ def config_as_str_for_docstring(
     config : dict
         Dictionary containing the configuration to be converted into
         docstring format.
-    config_type : :class:`ConfigType`, optional
+    config_type : ConfigType, default="json"
         A :class:`ConfigType` enumeration value specifying what type
-        of config file to generate. By default, :attr:`ConfigType.JSON`.
-    num_spaces : int, optional
-        Number of spaces to add after a newline. By default, `12`.
+        of config file to generate. By default, "json".
+    num_spaces : int, default=12
+        Number of spaces to add after a newline. By default, ``12``.
 
     Returns
     -------

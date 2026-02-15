@@ -570,7 +570,7 @@ class Collector:
 
         Parameters
         ----------
-        meta : :class:`pd.DataFrame`
+        meta : pandas.DataFrame
             DataFrame of combined meta from all files in
             `self.h5_files`. Duplicate GIDs are dropped and a warning is
             raised.
@@ -897,7 +897,7 @@ def parse_meta(h5_file):
 
     Returns
     -------
-    meta : :class:`pd.DataFrame`
+    meta : pandas.DataFrame
         Portion of meta data corresponding to sites in `h5_file`.
     """
     with Resource(h5_file) as res:

@@ -24,6 +24,7 @@ class PipelineStep:
     """A Pipeline Config step"""
 
     COMMAND_KEY = "command"
+    """Key in pipeline step dictionary that specifies the command"""
     _KEYS_PER_STEP = 2
 
     def __init__(self, step_dict):
@@ -61,6 +62,7 @@ class Pipeline:
     """gaps pipeline execution framework"""
 
     COMMANDS = {}
+    """Pipeline command registry"""
 
     def __init__(self, pipeline, monitor=True):
         """
