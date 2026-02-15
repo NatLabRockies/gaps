@@ -26,7 +26,7 @@ jobs:
         persist-credentials: false
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'
@@ -37,7 +37,7 @@ jobs:
         python -m pip install tox tox-gh-actions>=2.0
 
     - name: Load tox cache
-      uses: actions/cache/restore@v5
+      uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
       with:
         path: .tox/
         key: ${{ runner.os }}-${{ matrix.python-version }}-tox-v1-${{ hashFiles('**/pyproject.toml') }}
@@ -51,7 +51,7 @@ jobs:
 
     - name: Save tox cache only on main
       if: github.ref == 'refs/heads/main'
-      uses: actions/cache/save@v5
+      uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
       with:
         path: .tox/
         key: ${{ runner.os }}-${{ matrix.python-version }}-tox-v1-${{ hashFiles('**/pyproject.toml') }}
@@ -73,7 +73,7 @@ jobs:
         persist-credentials: false
 
     - name: Set up Python 3.9
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
       with:
         python-version: 3.9
 

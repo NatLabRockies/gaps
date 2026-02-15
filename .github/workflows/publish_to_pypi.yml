@@ -22,7 +22,7 @@ jobs:
         fetch-tags: true
         persist-credentials: false
 
-    - uses: prefix-dev/setup-pixi@v0.9.4
+    - uses: prefix-dev/setup-pixi@a0af7a228712d6121d37aba47adf55c1332c9c2e
       with:
         pixi-version: v0.62.2
         locked: true
@@ -34,4 +34,4 @@ jobs:
       run: pixi run -e dev build-wheels
 
     - name: Publish package distributions to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+      uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e

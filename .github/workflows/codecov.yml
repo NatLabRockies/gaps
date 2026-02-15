@@ -16,7 +16,7 @@ jobs:
         ref: ${{ github.event.pull_request.head.ref || github.ref }}
         fetch-depth: 1
     - name: Setup Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
       with:
         python-version: 3.13
     - name: Install dependencies
@@ -28,7 +28,7 @@ jobs:
       run: |
         pytest -v --cov=gaps --cov-report=html --cov-branch --cov-report=xml:coverage.xml --cov-fail-under=95
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ./coverage.xml
