@@ -41,6 +41,7 @@ dependencies = [
   "psutil>=7.0.0",
   "pyjson5>=1.6.4",
   "pyyaml>=6.0.2",
+  "setuptools>=80.1.0",  # required for sphinx-tabs to function properly in downstream projects
   "sphinx>=7.4.7",
   "sphinx-click>=6.0.0",
   "sphinx-copybutton>=0.5.2",
@@ -74,7 +75,6 @@ doc = [
   "myst-parser>=3.0.1,<4",
   "pandoc>=2.4,<3",
   "pydata-sphinx-theme>=0.16.1,<0.17",
-  "setuptools>=80.1.0,<81",
 ]
 build = [
   "build>=1.2.2,<2",
@@ -137,6 +137,7 @@ numpydoc = ">=1.8.0"
 pandas = ">=2.2.3,<3"
 psutil = ">=7.0.0"
 pyyaml = ">=6.0.2"
+setuptools = ">=80.1.0"  # required for sphinx-tabs to function properly in downstream projects
 sphinx = ">=7.4.7"
 sphinx-click = ">=6.0.0"
 sphinx-copybutton = ">=0.5.2"
@@ -167,7 +168,6 @@ make = ">=4.4.1,<5"
 myst-parser = ">=3.0.1,<4"
 pandoc = ">=2.4,<3"
 pydata-sphinx-theme = ">=0.16.1,<0.17"
-setuptools = ">=80.1.0,<81"
 
 [tool.pixi.feature.build.dependencies]
 python-build = ">=1.2.2,<2"
