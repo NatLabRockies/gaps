@@ -1409,5 +1409,51 @@ def test_args_passed_to_pre_processor(
         from_config(config_fp, command_config)
 
 
+@pytest.mark.parametrize("test_class", [False, True])
+def test_execution_control_passed_to_preprocessor(
+    tmp_path, test_ctx, test_class, runnable_script, monkeypatch
+):
+    """Test execution_control is passed into config preprocessor kwargs."""
+
+    input_config = {
+        "execution_control": {
+            "option": "local",
+            "max_workers": 3,
+            "nodes": 2,
+        },
+        "input1": 1,
+        "input3": None,
+        "project_points": [0, 1, 2],
+    }
+    config_fp = tmp_path / "config.json"
+    with config_fp.open("w", encoding="utf-8") as config_file:
+        json.dump(input_config, config_file)
+
+    # Only validate preprocessor kwargs wiring; avoid subprocess kickoff.
+    monkeypatch.setattr("gaps.cli.config.kickoff_job", lambda *_, **__: None)
+
+    def pre_processing(config, execution_control):
+        assert execution_control == input_config["execution_control"]
+        assert config["execution_control"] == execution_control
+        return config
+
+    if test_class:
+        command_config = CLICommandFromClass(
+            TestCommand,
+            "run",
+            split_keys={"project_points", "input3"},
+            config_preprocessor=pre_processing,
+        )
+    else:
+        command_config = CLICommandFromFunction(
+            _testing_function,
+            name="run",
+            split_keys={"project_points", "input3"},
+            config_preprocessor=pre_processing,
+        )
+
+    from_config(config_fp, command_config)
+
+
 if __name__ == "__main__":
     pytest.main(["-q", "--show-capture=all", Path(__file__), "-rapP"])

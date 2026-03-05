@@ -291,6 +291,12 @@ class CLICommandFromFunction(AbstractBaseCLICommandConfiguration):
                     Also note that this string *WILL NOT* contain a
                     file-ending, so that will have to be added by the
                     node function.
+                execution_control : dict
+                    The execution control dictionary specified by the
+                    user in the config file. This can sometimes be an
+                    empty dictionary, especially if the user is
+                    performing a local run. Be sure to use ``.get`` to
+                    extract relevant parameters.
                 log_directory : Path
                     Path to log output directory (defaults to
                     project_dir / "logs").

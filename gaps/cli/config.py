@@ -148,6 +148,7 @@ class _FromConfig:
             "out_fpath": self.project_dir / self.job_name,
             "log_directory": self.log_directory,
             "verbose": self.verbose,
+            "execution_control": self.config.get("execution_control", {}),
         }
         extra_preprocessor_kwargs = {
             k: self.config[k]
