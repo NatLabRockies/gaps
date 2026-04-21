@@ -1,13 +1,12 @@
-# -*- coding: utf-8 -*-
-"""
-GAPs Logging tests.
-"""
+"""GAPs Logging tests."""
+
 import logging
 from pathlib import Path
 
 import pytest
 
-from gaps.log import init_logger, log_versions, log_mem
+import gaps
+from gaps.log import cleanup_logger, init_logger, log_versions, log_mem
 
 
 def clear_handlers(logger):
@@ -34,6 +33,43 @@ def test_log_mem(caplog):
     assert any(
         "Memory utilization is" in record.message for record in caplog.records
     )
+
+
+@pytest.mark.parametrize("add_null_handler", [False, True])
+def test_cleanup_logger_removes_all_handlers(tmp_path, add_null_handler):
+    """Test that logger cleanup removes handlers and restores NullHandler."""
+    clear_handlers(gaps.logger)
+
+    test_log_file = tmp_path / "cleanup.log"
+    init_logger(stream=True, file=test_log_file.as_posix())
+
+    assert any(
+        isinstance(handler, logging.FileHandler)
+        for handler in gaps.logger.handlers
+    )
+    assert any(
+        isinstance(handler, logging.StreamHandler)
+        and not isinstance(handler, logging.FileHandler)
+        for handler in gaps.logger.handlers
+    )
+
+    cleanup_logger(add_null_handler=add_null_handler)
+
+    non_null_handlers = [
+        handler
+        for handler in gaps.logger.handlers
+        if not isinstance(handler, logging.NullHandler)
+    ]
+    assert not non_null_handlers
+
+    if add_null_handler:
+        assert len(gaps.logger.handlers) == 1
+        assert isinstance(gaps.logger.handlers[0], logging.NullHandler)
+    else:
+        assert not gaps.logger.handlers
+
+    clear_handlers(gaps.logger)
+    gaps.logger.addHandler(logging.NullHandler())
 
 
 @pytest.mark.parametrize("logger_name", ["gaps", "gaps.cli"])
@@ -100,7 +136,7 @@ def test_basic_logging_to_file(
     assert [f.name for f in test_log_dir.glob("*")] == [test_log_file.name]
     assert_message_was_logged("Test", log_level="INFO", clear_records=True)
 
-    with open(test_log_file, "r") as log_file:
+    with Path(test_log_file).open("r", encoding="utf-8") as log_file:
         contents = log_file.readlines()
 
     assert len(contents) == 1

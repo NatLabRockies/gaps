@@ -147,7 +147,11 @@ class DatasetCollector:
 
         with _OutputsWithAliases(self._h5_file, mode="a") as out:
             if axis == 1:
-                dataset_shape = (len(out),)
+                # For 1D datasets, size should match the number of gids
+                # we intend to collect. The output file may not have
+                # meta yet (len(out) == 0), e.g. when DatasetCollector
+                # is instantiated before Collector.combine_meta().
+                dataset_shape = (len(self._gids),)
             elif axis == 2:  # noqa: PLR2004
                 if "time_index" in out.datasets:
                     dataset_shape = out.shape

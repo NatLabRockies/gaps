@@ -22,6 +22,17 @@ from gaps.cli.preprocessing import (
     preprocess_script_config,
 )
 from gaps.cli.status import status_command
+from gaps.log import cleanup_logger
+
+
+class _CleanupGroup(click.Group):
+    """Custom click Group that cleans up logs after command execution"""
+
+    def invoke(self, ctx):
+        try:
+            return super().invoke(ctx)
+        finally:
+            cleanup_logger()
 
 
 class _CLICommandGenerator:
@@ -222,7 +233,7 @@ def make_cli(commands, info=None):
     else:
         main_help = "Command Line Interface"
 
-    main = click.Group(
+    main = _CleanupGroup(
         help=main_help, params=options, callback=_main_cb, commands=commands
     )
     version = info.get("version")

@@ -6,6 +6,7 @@ Some of the code in this module is borrowed from rex
 
 import sys
 import logging
+import contextlib
 from functools import partial
 from pathlib import Path
 
@@ -48,6 +49,35 @@ def log_mem(log_level="DEBUG"):
     gaps.logger.log(logging.getLevelName(log_level), msg)
 
     return msg
+
+
+def cleanup_logger(add_null_handler=True):
+    """Flush, close, and detach all handlers from a logger.
+
+    Parameters
+    ----------
+    add_null_handler : bool, optional
+        Option to add back a ``NullHandler``. The default state of the
+        ``gaps`` logger is to contain a ``NullHandler``, so this option
+        is provided for consistency. By default, ``True``.
+    """
+    for handler in list(gaps.logger.handlers):
+        try:
+            with contextlib.suppress(OSError, ValueError):
+                handler.acquire()
+                handler.flush()
+                handler.close()
+        finally:
+            with contextlib.suppress(Exception):
+                handler.release()
+
+        gaps.logger.removeHandler(handler)
+
+    if add_null_handler and not any(
+        isinstance(handler, logging.NullHandler)
+        for handler in gaps.logger.handlers
+    ):
+        gaps.logger.addHandler(logging.NullHandler())
 
 
 def init_logger(stream=True, level="INFO", file=None, fmt=FORMAT):
