@@ -10,8 +10,10 @@ import h5py
 import psutil
 import pytest
 import numpy as np
+import click
 
 from gaps import Pipeline
+import gaps.cli.cli as cli_module
 from gaps.status import Status, StatusOption
 from gaps.cli import CLICommandFromFunction, make_cli
 from gaps.cli.config import TAG
@@ -160,6 +162,28 @@ def test_make_cli():
     assert "$ test collect-run --help" not in main.help
 
 
+def test_cleanup_group_invoke_runs_cleanup_on_error(monkeypatch):
+    """Test that logger cleanup runs even if command invocation fails."""
+
+    call_order = []
+    msg = "invoke failed test"
+
+    def _raise_invoke(self, ctx):
+        call_order.append("invoke")
+        raise RuntimeError(msg)
+
+    def _cleanup():
+        call_order.append("cleanup")
+
+    monkeypatch.setattr(click.Group, "invoke", _raise_invoke, raising=True)
+    monkeypatch.setattr(cli_module, "cleanup_logger", _cleanup, raising=True)
+
+    with pytest.raises(RuntimeError, match=msg):
+        cli_module._CleanupGroup().invoke(None)
+
+    assert call_order == ["invoke", "cleanup"]
+
+
 @pytest.mark.integration
 @pytest.mark.parametrize("test_single_file", [True, False])
 def test_cli(
@@ -224,8 +248,7 @@ def test_cli(
     log_file = set((tmp_cwd / "logs").glob("*collect_run*"))
     assert len(log_file) == 1
 
-    with Path(log_file.pop()).open("r", encoding="utf-8") as log:
-        assert "DEBUG" in log.read()
+    assert "DEBUG" in Path(log_file.pop()).read_text(encoding="utf-8")
 
     h5_files = set(tmp_cwd.glob("*.h5"))
     assert len(h5_files) == 1
@@ -310,8 +333,7 @@ def test_cli_monitor(
     log_file = set((tmp_cwd / "logs").glob("*collect_run*"))
     assert len(log_file) == 1
 
-    with Path(log_file.pop()).open("r", encoding="utf-8") as log:
-        assert "DEBUG" not in log.read()
+    assert "DEBUG" not in Path(log_file.pop()).read_text(encoding="utf-8")
 
     h5_files = set(tmp_cwd.glob("*.h5"))
     assert len(h5_files) == 1
@@ -428,8 +450,7 @@ def test_cli_background(
     log_file = set((tmp_cwd / "logs").glob("*collect_run*"))
     assert len(log_file) == 1
 
-    with Path(log_file.pop()).open("r", encoding="utf-8") as log:
-        assert "DEBUG" not in log.read()
+    assert "DEBUG" not in Path(log_file.pop()).read_text(encoding="utf-8")
 
     h5_files = set(tmp_cwd.glob("*.h5"))
     assert len(h5_files) == 1
