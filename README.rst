@@ -64,7 +64,7 @@ geospatial extent (e.g. CONUS) across many parallel HPC nodes.
 GAPs is **NOT** a workflow management system (WMS), and therefore does not
 provide any of the in-depth tools/capabilities expected from a proper WMS.
 However, GAPs-supported models can sometimes be included as part of the workflow in
-WMS tools like `Torc <https://pages.github.natlabrockies.gov/viz/wms/index.html#/>`_.
+WMS tools like `Torc <https://github.com/NatLabRockies/torc>`_.
 
 To get started, take a look at the examples for
 `analysts <https://natlabrockies.github.io/gaps/misc/examples.users.html>`_ or
