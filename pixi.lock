@@ -6778,8 +6778,8 @@ packages:
   timestamp: 1776698648047
 - pypi: ./
   name: nlr-gaps
-  version: 0.9.3.dev13+g0572d9e88.d20260421
-  sha256: cc6426a7677c63115a96591610d8e05c6ad00095258396a9aa043638649b4275
+  version: 0.9.3.dev15+gdb47d4628.d20260421
+  sha256: e3f4c6b15697be5ec21b574de8d2c20b01ff54b5aaad2fc11f6bd98273b9b606
   requires_dist:
   - click>=8.1.8
   - colorama>=0.4.6
@@ -6794,7 +6794,7 @@ packages:
   - sphinx>=9.1.0
   - sphinx-click>=6.0.0
   - sphinx-copybutton>=0.5.2
-  - sphinx-tabs>=3.5
+  - sphinx-tabs>=3.4.7
   - sphinxcontrib-mermaid>=1.0.0
   - tabulate>=0.9.0
   - toml>=0.10.2
