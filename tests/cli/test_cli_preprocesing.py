@@ -6,6 +6,7 @@ GAPs CLI preprocessing tests.
 """
 
 import json
+import glob
 from pathlib import Path
 
 import pytest
@@ -112,6 +113,37 @@ def test_preprocess_collect_config_pipeline_input(tmp_path):
     for out_fp, pattern in zip(config["_out_path"], config["_pattern"]):
         assert any(name in out_fp for name in allowed_out_fn)
         assert out_fp == pattern.replace("*", "")
+
+
+def test_preprocess_collect_config_pipeline_input_ignores_untagged_file(
+    tmp_path,
+):
+    """Test that PIPELINE collection patterns do not match untagged files."""
+    config_fp = tmp_path / "pipe_config.json"
+    with open(config_fp, "w") as file_:
+        json.dump(SAMPLE_CONFIG, file_)
+
+    (tmp_path / "config.json").touch()
+    (tmp_path / "collect_config.json").touch()
+
+    Pipeline(config_fp)
+
+    job_file = tmp_path / "output_file_j0.h5"
+    job_file.touch()
+    (tmp_path / "output_file.h5").touch()
+    Status.make_single_job_file(
+        tmp_path,
+        pipeline_step="run",
+        job_name="test_0",
+        attrs={StatusField.OUT_FILE: job_file.as_posix()},
+    )
+
+    config = preprocess_collect_config({}, tmp_path, "collect-run")
+
+    matched_files = sorted(
+        Path(path) for path in glob.glob(config["_pattern"][0])
+    )
+    assert matched_files == [job_file]
 
 
 def test_split_project_points_into_ranges():
