@@ -17,6 +17,7 @@ from gaps.cli.preprocessing import (
     preprocess_collect_config,
     split_project_points_into_ranges,
 )
+from gaps.cli.config import TAG
 from gaps.exceptions import gapsConfigError
 from gaps.warn import gapsWarning
 
@@ -112,7 +113,7 @@ def test_preprocess_collect_config_pipeline_input(tmp_path):
     assert len(config["_pattern"]) == 2
     for out_fp, pattern in zip(config["_out_path"], config["_pattern"]):
         assert any(name in out_fp for name in allowed_out_fn)
-        assert out_fp == pattern.replace("*", "")
+        assert out_fp == pattern.replace(f"{TAG}*", "")
 
 
 def test_preprocess_collect_config_pipeline_input_ignores_untagged_file(
