@@ -370,7 +370,7 @@ def test_cli_monitor(
         assert "collect-run_collect_pattern" in collected_outputs.attrs
         assert (
             Path(collected_outputs.attrs["collect-run_collect_pattern"])
-            == tmp_cwd / file_pattern
+            == tmp_cwd / file_pattern.replace("*", f"{TAG}*")
         )
 
     profiles = manual_collect(data_dir / file_pattern, "cf_profile")
@@ -487,7 +487,7 @@ def test_cli_background(
         assert "collect-run_collect_pattern" in collected_outputs.attrs
         assert (
             Path(collected_outputs.attrs["collect-run_collect_pattern"])
-            == tmp_cwd / file_pattern
+            == tmp_cwd / file_pattern.replace("*", f"{TAG}*")
         )
 
     profiles = manual_collect(data_dir / file_pattern, "cf_profile")

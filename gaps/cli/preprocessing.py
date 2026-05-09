@@ -150,13 +150,16 @@ def preprocess_collect_config(
     files = collect_pattern
     if files == "PIPELINE":
         files = parse_previous_status(project_dir, command_name)
-        files = [re.sub(f"{TAG}\\d+", "*", fname) for fname in files]
+        files = [re.sub(f"{TAG}\\d+", f"{TAG}*", fname) for fname in files]
 
     if isinstance(files, str):
         files = [files]
 
     if isinstance(files, abc.Sequence):
-        files = {pattern.replace("*", ""): pattern for pattern in files}
+        files = {
+            pattern.replace(f"{TAG}*", "").replace("*", ""): pattern
+            for pattern in files
+        }
 
     files = [
         (
