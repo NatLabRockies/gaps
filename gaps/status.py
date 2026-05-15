@@ -538,6 +538,16 @@ class Status(UserDict):
         if current is not None:
             self.data = recursively_update_dict(self.data, current)
 
+            try:
+                job_data = self.data[pipeline_step][job_name]
+            except KeyError:
+                job_data = None
+
+            if job_data is not None and job_data.get(StatusField.JOB_ID):
+                self._update_job_status_from_hardware(
+                    job_data, hardware_status_retriever
+                )
+
         # check job status via hardware if job file not found.
         elif pipeline_step in self.data:
             # job exists
