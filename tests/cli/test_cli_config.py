@@ -175,6 +175,30 @@ def _testing_function_no_pp(  # noqa: PLR0913, PLR0917
     return out_fp.as_posix()
 
 
+def _testing_function_with_logging_options(
+    project_points,
+    input1,
+    input3,
+    tag,
+    out_dir,
+    log_directory=None,
+    verbose=None,
+):
+    """Test function that records logging kwargs passed to the node."""
+    out_fp = Path(out_dir) / f"logging-options{tag}.json"
+    out_vals = {
+        "len_pp": len(project_points),
+        "input1": input1,
+        "input3": input3,
+        "log_directory": Path(log_directory).as_posix(),
+        "verbose": verbose,
+    }
+    with out_fp.open("w", encoding="utf-8") as out_file:
+        json.dump(out_vals, out_file)
+
+    return out_fp.as_posix()
+
+
 class TestCommand:
     """Test command class"""
 
@@ -1407,6 +1431,51 @@ def test_args_passed_to_pre_processor(
 
     with pytest.warns(gapsWarning):
         from_config(config_fp, command_config)
+
+
+@pytest.mark.parametrize("test_extras", [False, True])
+def test_logging_args_passed_to_node_function(
+    tmp_path, test_ctx, test_extras, runnable_script
+):
+    """Test logging args are available to the node function."""
+
+    input_config = {
+        "execution_control": {"max_workers": 3},
+        "input1": 1,
+        "input3": None,
+        "project_points": [0, 1, 2],
+    }
+    expected_log_directory = tmp_path / "logs"
+    expected_verbose = False
+
+    if test_extras:
+        expected_log_directory = tmp_path / "other_logs"
+        expected_verbose = True
+        input_config["log_directory"] = expected_log_directory.as_posix()
+        input_config["log_level"] = "DEBUG"
+
+    config_fp = tmp_path / "config.json"
+    with config_fp.open("w", encoding="utf-8") as config_file:
+        json.dump(input_config, config_file)
+
+    command_config = CLICommandFromFunction(
+        _testing_function_with_logging_options,
+        name="run",
+    )
+
+    from_config(config_fp, command_config)
+
+    status = Status(tmp_path).update_from_all_job_files()
+    job_name = next(iter(status["run"]))
+    out_file = Path(status["run"][job_name][StatusField.OUT_FILE])
+    with out_file.open("r", encoding="utf-8") as output_file:
+        outputs = json.load(output_file)
+
+    assert outputs["len_pp"] == 3
+    assert outputs["input1"] == 1
+    assert outputs["input3"] is None
+    assert outputs["log_directory"] == expected_log_directory.as_posix()
+    assert outputs["verbose"] is expected_verbose
 
 
 @pytest.mark.parametrize("test_class", [False, True])
