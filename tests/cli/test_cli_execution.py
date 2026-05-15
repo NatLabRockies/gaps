@@ -1,15 +1,18 @@
-# -*- coding: utf-8 -*-
-# pylint: disable=redefined-outer-name
-"""
-GAPs HPC job managers tests.
-"""
+"""GAPs HPC job managers tests."""
+
 import json
 from pathlib import Path
 
 import pytest
 
 import gaps.hpc
-from gaps.status import Status, StatusField, StatusOption, HardwareOption
+from gaps.status import (
+    Status,
+    StatusField,
+    StatusOption,
+    HardwareOption,
+    StatusUpdates,
+)
 from gaps.cli.execution import kickoff_job, _should_run
 from gaps.exceptions import gapsConfigError
 
@@ -74,6 +77,40 @@ def test_should_run(test_ctx, caplog, assert_message_was_logged):
         assert not caplog.records
 
 
+def test_should_run_stale_hpc_running_status(test_ctx):
+    """Test stale HPC running status is downgraded and re-run."""
+
+    class _MissingJobManager:
+        """Minimal scheduler stub that cannot find the job."""
+
+        @staticmethod
+        def check_status_using_job_id(job_id):  # noqa
+            return None
+
+    test_ctx.obj["MANAGER"] = _MissingJobManager()
+    job_attrs = {
+        StatusField.JOB_ID: "9999",
+        StatusField.HARDWARE: HardwareOption.EAGLE,
+    }
+    status_updates = StatusUpdates(
+        test_ctx.obj["OUT_DIR"],
+        test_ctx.obj["PIPELINE_STEP"],
+        test_ctx.obj["NAME"],
+        job_attrs,
+    )
+    status_updates.__enter__()  # noqa
+
+    assert _should_run(test_ctx)
+
+    status = Status.retrieve_job_status(
+        test_ctx.obj["OUT_DIR"],
+        pipeline_step=test_ctx.obj["PIPELINE_STEP"],
+        job_name=test_ctx.obj["NAME"],
+        subprocess_manager=test_ctx.obj["MANAGER"],
+    )
+    assert status == StatusOption.FAILED
+
+
 @pytest.mark.parametrize("option", ["local", "LOCAL", "Local", "LoCaL"])
 def test_kickoff_job_local_basic(option, test_ctx, assert_message_was_logged):
     """Test kickoff for a basic command for local job."""
@@ -95,7 +132,7 @@ def test_kickoff_job_local_basic(option, test_ctx, assert_message_was_logged):
     status_file = files[0]
     assert status_file.name.endswith(".json")
 
-    with open(status_file, "r") as status_fh:
+    with Path(status_file).open("r", encoding="utf-8") as status_fh:
         status = json.load(status_fh)
 
     assert StatusField.HARDWARE in status["run"]["test"]
@@ -183,7 +220,7 @@ def test_kickoff_job_hpc(
     status_file = status_file[0]
     assert status_file.name.endswith(".json")
 
-    with open(status_file, "r") as status_fh:
+    with Path(status_file).open("r", encoding="utf-8") as status_fh:
         status = json.load(status_fh)
 
     assert status["run"][job_name][StatusField.HARDWARE] == "eagle"
@@ -270,7 +307,7 @@ def test_qos_values(test_ctx, monkeypatch):
     status_file = status_file[0]
     assert status_file.name.endswith(".json")
 
-    with open(status_file, "r") as status_fh:
+    with Path(status_file).open("r", encoding="utf-8") as status_fh:
         status = json.load(status_fh)
 
     assert status["run"][test_ctx.obj["NAME"]][StatusField.QOS] == "dne"

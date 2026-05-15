@@ -1,7 +1,4 @@
-# pylint: disable=protected-access,redefined-outer-name
-"""
-GAPs Status tests.
-"""
+"""GAPs Status tests"""
 
 import json
 import shutil
@@ -140,7 +137,7 @@ def test_status_job_ids(temp_job_dir):
     """Test test_status job_ids."""
     tmp_path, status_fp = temp_job_dir
     status_fp.parent.mkdir(parents=True, exist_ok=True)
-    with open(status_fp, "w") as file_:
+    with status_fp.open("w") as file_:
         json.dump(TEST_2_ATTRS_2, file_)
     status = Status(tmp_path)
     assert status.job_ids == [123]
@@ -268,7 +265,7 @@ def test_update_from_all_job_files(temp_job_dir):
 
     status = Status(tmp_path).update_from_all_job_files()
     status.dump()
-    with open(status_fp, "r") as file_:
+    with status_fp.open("r", encoding="utf-8") as file_:
         data = json.load(file_)
     assert json.dumps(TEST_1_ATTRS_1) in json.dumps(data)
     assert json.dumps(TEST_2_ATTRS_1) in json.dumps(data)
@@ -285,7 +282,7 @@ def test_update_job_status(tmp_path, monkeypatch):
         StatusField.JOB_STATUS: StatusOption.NOT_SUBMITTED
     }
 
-    tmp_path = tmp_path / "test"
+    tmp_path /= "test"
     tmp_path.mkdir()
 
     Status.make_single_job_file(
@@ -380,6 +377,37 @@ def test_update_job_status_with_hardware(tmp_path, monkeypatch):
     assert (
         status["generation"]["test2"][StatusField.JOB_STATUS]
         == StatusOption.COMPLETE
+    )
+
+
+def test_update_job_status_marks_missing_hpc_job_file_as_failed(
+    tmp_path, monkeypatch
+):
+    """Test job file updates still reconcile against missing hardware jobs."""
+    monkeypatch.setattr(
+        HardwareStatusRetriever,
+        "__getitem__",
+        lambda *__, **___: None,
+        raising=True,
+    )
+
+    Status.make_single_job_file(
+        tmp_path,
+        "generation",
+        "test1",
+        {
+            StatusField.JOB_STATUS: StatusOption.SUBMITTED,
+            StatusField.HARDWARE: HardwareOption.SLURM,
+            StatusField.JOB_ID: 1234,
+        },
+    )
+
+    status = Status(tmp_path)
+    status.update_job_status("generation", "test1")
+
+    assert (
+        status["generation"]["test1"][StatusField.JOB_STATUS]
+        == StatusOption.FAILED
     )
 
 
@@ -604,7 +632,7 @@ def test_status_updates(tmp_path, assert_message_was_logged):
         assert len(list(tmp_path.glob("*"))) == 1
         job_files = list(status_dir.glob("*"))
         assert len(job_files) == 1
-        with open(job_files[0]) as job_status:
+        with Path(job_files[0]).open("r", encoding="utf-8") as job_status:
             status = json.load(job_status)
 
         assert "generation" in status
@@ -625,7 +653,7 @@ def test_status_updates(tmp_path, assert_message_was_logged):
     assert len(list(tmp_path.glob("*"))) == 1
     job_files = list(status_dir.glob("*"))
     assert len(job_files) == 1
-    with open(job_files[0]) as job_status:
+    with Path(job_files[0]).open("r", encoding="utf-8") as job_status:
         status = json.load(job_status)["generation"]["test0"]
 
     assert status.get(StatusField.JOB_STATUS) == StatusOption.SUCCESSFUL
@@ -657,7 +685,7 @@ def test_status_for_failed_job(tmp_path, assert_message_was_logged):
             assert StatusField.TOTAL_RUNTIME not in status
             assert StatusField.RUNTIME_SECONDS not in status
             assert StatusField.OUT_FILE not in status
-            raise _TestError
+            raise _TestError  # noqa
     except _TestError:
         pass
 
