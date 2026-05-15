@@ -299,6 +299,8 @@ class _FromConfig:
                 "job_name": job_name,
                 "out_dir": self.project_dir.as_posix(),
                 "out_fpath": self._suggested_stem(job_name).as_posix(),
+                "log_directory": self.log_directory.as_posix(),
+                "verbose": self.verbose,
                 "run_method": getattr(self.command_config, "run_method", None),
             }
         )

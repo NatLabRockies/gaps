@@ -155,6 +155,12 @@ class CLICommandFromFunction(AbstractBaseCLICommandConfiguration):
                     output filename will contain the tag. Also note that
                     this string *WILL NOT* contain a file-ending, so
                     that will have to be added by the node function.
+                log_directory : str
+                    Path to log output directory (defaults to
+                    project_dir / "logs").
+                verbose : bool
+                    Flag indicating whether the user has selected a
+                    DEBUG verbosity level for logs.
 
             If your function is capable of multiprocessing, you should
             also include ``max_workers`` in the function signature.
@@ -476,6 +482,12 @@ class CLICommandFromClass(AbstractBaseCLICommandConfiguration):
                     output filename will contain the tag. Also note that
                     this string *WILL NOT* contain a file-ending, so
                     that will have to be added by the node function.
+                log_directory : str
+                    Path to log output directory (defaults to
+                    project_dir / "logs").
+                verbose : bool
+                    Flag indicating whether the user has selected a
+                    DEBUG verbosity level for logs.
 
             If your function is capable of multiprocessing, you should
             also include ``max_workers`` in the function signature.

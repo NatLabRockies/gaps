@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-"""
-GAPs CLI command configuration tests.
-"""
+"""GAPs CLI command configuration tests"""
+
 from pathlib import Path
 
 import click
