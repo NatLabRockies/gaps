@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
-"""
-GAPs Config tests.
-"""
+"""GAPs Config tests"""
+
+import json
 from pathlib import Path
 
 import pytest
@@ -49,6 +48,29 @@ def test_resolve_all_paths():
     assert (
         resolve_all_paths("~/test_dir/../", base_dir) == Path.home().as_posix()
     )
+
+
+@pytest.mark.parametrize(
+    "input_,expected",
+    [
+        (r".\test", lambda base_dir: (base_dir / "test").as_posix()),
+        (
+            r"..\test_file.json",
+            lambda base_dir: (base_dir.parent / "test_file.json").as_posix(),
+        ),
+        (
+            r"test_dir\..\\test_file.json",
+            lambda _base_dir: (
+                Path("test_dir/../test_file.json").resolve().as_posix()
+            ),
+        ),
+    ],
+)
+def test_resolve_path_windows_style_relative_paths(input_, expected):
+    """Test resolving Windows-style relative paths on any host"""
+
+    base_dir = Path.home()
+    assert resolve_all_paths(input_, base_dir) == expected(base_dir)
 
 
 def test_resolve_all_paths_list():
@@ -184,6 +206,34 @@ def test_config_as_str_for_docstring(config_type):
     assert len(split_str) >= 6
     for str_part in as_str.split("\n")[1:]:
         assert str_part.startswith("        ")
+
+
+def test_load_config_json(tmp_path):
+    """Test `load_config` with JSON file"""
+
+    config_data = {"key": "value", "number": 42}
+    config_file = tmp_path / "test_config.json"
+    with config_file.open("w", encoding="utf-8") as f:
+        json.dump(config_data, f)
+
+    result = load_config(config_file)
+    assert result == config_data
+
+
+def test_load_config_json5(tmp_path):
+    """Test `load_config` with JSON5 file"""
+
+    config_content = """{
+        // This is a comment
+        "key": "value",
+        "number": 42,
+    }"""
+    config_file = tmp_path / "test_config.json5"
+    with config_file.open("w", encoding="utf-8") as f:
+        f.write(config_content)
+
+    result = load_config(config_file)
+    assert result == {"key": "value", "number": 42}
 
 
 if __name__ == "__main__":
