@@ -29,9 +29,14 @@ def script(_cmd, project_dir):
     try:
         os.chdir(project_dir)
         stdout, stderr = submit(_cmd)
-        if stdout:
-            logger.info("Subprocess received stdout: \n%s", stdout)
-        if stderr:
-            logger.warning("Subprocess received stderr: \n%s", stderr)
+        _log_outputs(stdout, stderr)
     finally:
         os.chdir(original_directory)
+
+
+def _log_outputs(stdout, stderr):
+    """Log the outputs of a subprocess command execution"""
+    if stdout:
+        logger.info("Subprocess received stdout: \n%s", stdout)
+    if stderr:
+        logger.warning("Subprocess received stderr: \n%s", stderr)
