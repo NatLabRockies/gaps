@@ -260,7 +260,7 @@ class DatasetCollector:
     def _move_data(
         self, f_out, f_source, out_slice, source_slice, source_indexer
     ):
-        """Move data from f_source to f_out based on slices and indexer"""
+        """Move data from f_source to f_out"""
         if self._axis == 1:
             data = f_source[self._dataset_in, source_slice]
             if not all(source_indexer):
