@@ -56,7 +56,7 @@ dev = [
   "ipython>=8.18.1,<9",
   "jupyter>=1.1.1,<2",
   "pipreqs>=0.4.13,<0.5",
-  "ruff>=0.14.14,<0.15",
+  "ruff>=0.15.16,<0.16",
 ]
 test = [
   "flaky>=3.8.1,<4",
@@ -149,7 +149,7 @@ toml = ">=0.10.2"
 ipython = ">=8.18.1,<9"
 jupyter = ">=1.1.1,<2"
 pipreqs = ">=0.4.13,<0.5"
-ruff = ">=0.14.14,<0.15"
+ruff = ">=0.15.16,<0.16"
 frozenlist = ">=1.7,<2"
 
 [tool.pixi.feature.test.dependencies]

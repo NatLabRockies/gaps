@@ -1,5 +1,9 @@
 name: reV CLI Tests
 
+concurrency:
+  group: rev-cli-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 on: pull_request
 
 jobs:

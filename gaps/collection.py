@@ -247,24 +247,31 @@ class DatasetCollector:
         )
 
         try:
-            if self._axis == 1:
-                data = f_source[self._dataset_in, source_slice]
-                if not all(source_indexer):
-                    data = data[source_indexer]
-                f_out[self._dataset_out, out_slice] = data
-
-            elif self._axis == 2:  # noqa: PLR2004
-                data = f_source[self._dataset_in, :, source_slice]
-                if not all(source_indexer):
-                    data = data[:, source_indexer]
-                f_out[self._dataset_out, :, out_slice] = data
-
+            self._move_data(
+                f_out, f_source, out_slice, source_slice, source_indexer
+            )
         except Exception as exc:
             msg = (
                 f"Failed to collect {self._dataset_in!r} from source file "
                 f"{fp_source.name!r}."
             )
             raise gapsRuntimeError(msg) from exc
+
+    def _move_data(
+        self, f_out, f_source, out_slice, source_slice, source_indexer
+    ):
+        """Move data from f_source to f_out"""
+        if self._axis == 1:
+            data = f_source[self._dataset_in, source_slice]
+            if not all(source_indexer):
+                data = data[source_indexer]
+            f_out[self._dataset_out, out_slice] = data
+
+        elif self._axis == 2:  # noqa: PLR2004
+            data = f_source[self._dataset_in, :, source_slice]
+            if not all(source_indexer):
+                data = data[:, source_indexer]
+            f_out[self._dataset_out, :, out_slice] = data
 
     def _get_chunk_indices(self, all_source_gids, source_gids, fp_source):
         """Slices and indices used for selecting source gids
