@@ -1,5 +1,9 @@
 name: Python tests with tox
 
+concurrency:
+  group: tox-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 on:
   pull_request:
   push:

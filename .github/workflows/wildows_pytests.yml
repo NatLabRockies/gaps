@@ -1,5 +1,9 @@
 name: Windows Tests
 
+concurrency:
+  group: python-tests-windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 on: pull_request
 
 jobs:

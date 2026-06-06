@@ -1,5 +1,9 @@
 name: Super Lint Code Base
 
+concurrency:
+  group: super-lint-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 on:
   push:
     branches-ignore:
