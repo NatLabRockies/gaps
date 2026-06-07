@@ -9,7 +9,7 @@ import click
 from gaps.cli.config import GAPS_SUPPLIED_ARGS
 from gaps.cli.documentation import CommandDocumentation
 from gaps.cli.preprocessing import split_project_points_into_ranges
-from gaps.utilities import _is_sphinx_build
+from gaps.utilities.base import _is_sphinx_build
 
 
 class AbstractBaseCLICommandConfiguration(ABC):

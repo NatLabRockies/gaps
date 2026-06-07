@@ -11,7 +11,8 @@ import toml
 import pyjson5
 
 from gaps.log import init_logger
-from gaps.utilities import CaseInsensitiveEnum, resolve_path
+from gaps.utilities.enums import CaseInsensitiveEnum
+from gaps.utilities.base import resolve_path
 from gaps.exceptions import gapsValueError
 
 logger = logging.getLogger(__name__)

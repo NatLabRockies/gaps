@@ -9,7 +9,7 @@ from numpydoc.docscrape import NumpyDocString
 
 from gaps.status import HardwareOption
 from gaps.config import config_as_str_for_docstring, ConfigType
-from gaps.utilities import _is_sphinx_build
+from gaps.utilities.base import _is_sphinx_build
 
 
 _TAB_LENGTH = 4
