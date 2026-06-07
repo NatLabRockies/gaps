@@ -6,50 +6,12 @@ from warnings import warn
 import numpy as np
 import pandas as pd
 
-from rex.utilities import parse_table
-from gaps.exceptions import (
-    gapsIndexError,
-    gapsKeyError,
-    gapsRuntimeError,
-)
+from gaps.utilities import parse_points_input_to_df
+from gaps.exceptions import gapsIndexError, gapsKeyError
 from gaps.warn import gapsWarning
-from gaps.utilities import project_points_from_container_or_slice
 
 
 logger = logging.getLogger(__name__)
-
-
-def _parse_sites(points):
-    """Parse project points from list or slice
-
-    Parameters
-    ----------
-    points : int | str | pandas.DataFrame | slice | list
-        Slice specifying project points, string pointing to a project
-        points csv, or a DataFrame containing the effective csv
-        contents. Can also be a single integer site value.
-
-    Returns
-    -------
-    df : pandas.DataFrame
-        DataFrame of sites (gids) with corresponding args
-
-    Raises
-    ------
-    gapsRuntimeError
-        If points not flat.
-    """
-    try:
-        points = project_points_from_container_or_slice(points)
-    except TypeError as err:
-        msg = (
-            f"Cannot parse points data from {points}. If this input is a "
-            "container, please ensure that the container is flat (no "
-            "nested gid values)."
-        )
-        raise gapsRuntimeError(msg) from err
-
-    return pd.DataFrame({"gid": points})
 
 
 class ProjectPoints:
@@ -82,17 +44,16 @@ class ProjectPoints:
         points : int | str | pandas.DataFrame | slice | list | dict
             Slice specifying project points, string pointing to a
             project points csv, or a DataFrame containing the effective
-            csv contents. Can also be a single integer site value.
+            csv contents. Dictionary inputs can either be column-oriented
+            table data or gid-keyed mappings of point-specific values.
+            Can also be a single integer site value.
 
         Returns
         -------
         df : pandas.DataFrame
             DataFrame of sites (gids) with corresponding args
         """
-        try:
-            self._df = parse_table(points)
-        except ValueError:
-            self._df = _parse_sites(points)
+        self._df = parse_points_input_to_df(points)
 
         if "gid" not in self._df.columns:
             msg = 'Project points data must contain "gid" column.'
