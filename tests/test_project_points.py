@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from gaps.project_points import ProjectPoints
-from gaps.exceptions import gapsKeyError, gapsRuntimeError
+from gaps.exceptions import gapsKeyError, gapsValueError
 
 
 def test_project_points_general():
@@ -48,7 +48,7 @@ def test_project_points_general():
     assert len(pp) == 3
     assert pp.split_range == (0, 3)
 
-    pp = ProjectPoints(pp.df.to_dict())
+    pp = ProjectPoints({"1": {}, "3": {}, "5": {}})
     assert len(pp) == 3
     assert pp.split_range == (0, 3)
 
@@ -59,7 +59,7 @@ def test_project_points_general():
     with pytest.raises(gapsKeyError):
         ProjectPoints(pd.DataFrame())
 
-    with pytest.raises(gapsRuntimeError):
+    with pytest.raises(gapsValueError):
         ProjectPoints(lambda x: x)
 
 
@@ -70,6 +70,20 @@ def test_project_points_ordering():
     assert len(pp) == 3
     assert "points_order" in pp.df
     assert np.allclose(pp.df.gid, [1, 2, 5])
+
+
+def test_project_points_mapping_input():
+    """Test gid-keyed mapping inputs with point-specific values."""
+    points = {"5": {"name": "five"}, "1": {"name": "one"}}
+
+    with pytest.warns(UserWarning):
+        pp = ProjectPoints(points, group="test")
+
+    assert pp.split_range == (0, 2)
+    assert pp.gids == [1, 5]
+    assert list(pp.df.name) == ["one", "five"]
+    assert list(pp.df.group) == ["test", "test"]
+    assert list(pp.df.points_order) == [1, 0]
 
 
 def test_project_points_iter():
@@ -240,7 +254,7 @@ def test_nested_sites():
     """
     Test check for nested points list
     """
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         points = [[1, 2, 3, 5]]
         ProjectPoints(points)
 

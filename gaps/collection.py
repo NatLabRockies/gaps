@@ -4,7 +4,6 @@ import sys
 import time
 import shutil
 import logging
-import contextlib
 from pathlib import Path
 from warnings import warn
 
@@ -17,7 +16,10 @@ from gaps._version import __version__
 from gaps.log import log_versions
 from gaps.warn import gapsCollectionWarning
 from gaps.exceptions import gapsRuntimeError
-from gaps.utilities import project_points_from_container_or_slice
+from gaps.utilities.io import (
+    parse_points_input_to_df,
+    project_points_from_container_or_slice,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -803,9 +805,7 @@ def parse_project_points(project_points):
     gids : list
         List of resource gids that are to be collected.
     """
-    with contextlib.suppress((TypeError, ValueError)):
-        project_points = pd.read_csv(project_points)
-
+    project_points = parse_points_input_to_df(project_points)
     points = project_points_from_container_or_slice(project_points)
     if sorted(points) != points:
         msg = (
