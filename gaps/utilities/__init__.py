@@ -1,6 +1,5 @@
 """GAPs utilities"""
 
-
 from .base import recursively_update_dict, resolve_path
 from .enums import CaseInsensitiveEnum
 from .io import (
