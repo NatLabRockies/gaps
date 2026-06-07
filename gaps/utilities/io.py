@@ -4,7 +4,6 @@ import os
 import contextlib
 
 import pandas as pd
-import numpy as np
 
 from gaps.config import load_config, ConfigType
 from gaps.exceptions import gapsValueError
@@ -74,7 +73,7 @@ def parse_points_input_to_df(points, parse_sites_callable=None):
 
     try:
         return (parse_sites_callable or _parse_sites)(points)
-    except Exception:
+    except Exception:  # noqa
         msg = f"Cannot parse project points from input of type {type(points)}"
         raise gapsValueError(msg) from None
 

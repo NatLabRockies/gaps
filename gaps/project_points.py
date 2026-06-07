@@ -4,7 +4,6 @@ import logging
 from warnings import warn
 
 import numpy as np
-import pandas as pd
 
 from gaps.utilities import parse_points_input_to_df
 from gaps.exceptions import gapsIndexError, gapsKeyError
@@ -44,9 +43,10 @@ class ProjectPoints:
         points : int | str | pandas.DataFrame | slice | list | dict
             Slice specifying project points, string pointing to a
             project points csv, or a DataFrame containing the effective
-            csv contents. Dictionary inputs can either be column-oriented
-            table data or gid-keyed mappings of point-specific values.
-            Can also be a single integer site value.
+            csv contents. Dictionary inputs can either be
+            column-oriented table data or gid-keyed mappings of
+            point-specific values. Can also be a single integer site
+            value.
 
         Returns
         -------

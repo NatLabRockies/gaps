@@ -1,6 +1,5 @@
 """GAPs base utilities"""
 
-import os
 import sys
 import copy
 import logging
