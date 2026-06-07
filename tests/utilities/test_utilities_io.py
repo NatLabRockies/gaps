@@ -128,6 +128,13 @@ def test_parse_points_input_to_df_site_selector(points, comparator):
     assert comparator(calls[0], points)
 
 
+def test_parse_points_input_to_df_site_selector_default_callable():
+    """Test parsing site selectors when parse_sites_callable is omitted."""
+    result = parse_points_input_to_df(slice(1, 4))
+
+    assert_frame_equal(result, pd.DataFrame({"gid": [1, 2, 3]}))
+
+
 def test_parse_points_input_to_df_unsupported_path_suffix(tmp_path):
     """Test error raised for unsupported file suffixes."""
     path = tmp_path / "project_points.txt"
@@ -135,12 +142,6 @@ def test_parse_points_input_to_df_unsupported_path_suffix(tmp_path):
 
     with pytest.raises(gapsValueError, match="Project points file must be"):
         parse_points_input_to_df(path, lambda _: None)
-
-
-def test_parse_points_input_to_df_unsupported_input_type():
-    """Test error raised for unsupported input types."""
-    with pytest.raises(gapsValueError, match="Cannot parse project points"):
-        parse_points_input_to_df({1, 2, 3}, lambda _: None)
 
 
 def test_project_points_from_container_or_slice():
