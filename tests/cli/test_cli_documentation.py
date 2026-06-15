@@ -4,6 +4,7 @@
 """
 GAPs CLI documentation tests.
 """
+
 from copy import deepcopy
 from pathlib import Path
 
@@ -255,7 +256,7 @@ def test_command_documentation_default_exec_values_and_doc():
     assert ":nodes:" not in doc.exec_control_doc
     assert ":max_workers:" not in doc.exec_control_doc
 
-    doc = CommandDocumentation(func_no_args, is_split_spatially=True)
+    doc = CommandDocumentation(func_no_args, is_split_across_nodes=True)
     assert doc.default_exec_values == DEFAULT_EXEC_VALUES
     assert ":max_workers:" not in doc.default_exec_values
     assert ":nodes:" in doc.exec_control_doc
@@ -300,7 +301,7 @@ def test_command_documentation_template_config():
         """Test func."""
 
     doc = CommandDocumentation(
-        func, skip_params={"a"}, is_split_spatially=True
+        func, skip_params={"a"}, is_split_across_nodes=True
     )
 
     exec_vals = deepcopy(DEFAULT_EXEC_VALUES)
@@ -344,7 +345,7 @@ def test_command_documentation_parameter_help():
             Path to project points file.
         """
 
-    doc = CommandDocumentation(func, is_split_spatially=True)
+    doc = CommandDocumentation(func, is_split_across_nodes=True)
     param_help = doc.parameter_help
 
     section_dividers = [
@@ -372,7 +373,7 @@ def test_command_documentation_hpc_parameter_help():
             Path to project points file.
         """
 
-    doc = CommandDocumentation(func, is_split_spatially=True)
+    doc = CommandDocumentation(func, is_split_across_nodes=True)
     param_help = doc.hpc_parameter_help
 
     section_dividers = [
@@ -405,7 +406,7 @@ def test_command_documentation_extended_summary():
         None
         """
 
-    doc = CommandDocumentation(func, is_split_spatially=True)
+    doc = CommandDocumentation(func, is_split_across_nodes=True)
 
     expected_str = (
         "    An extended summary.\n\nAnother line of extended summary."
@@ -420,7 +421,7 @@ def test_command_documentation_config_help(monkeypatch):
         gaps.cli.documentation, "_is_sphinx_build", lambda: True, raising=True
     )
 
-    doc = CommandDocumentation(func_no_args, is_split_spatially=True)
+    doc = CommandDocumentation(func_no_args, is_split_across_nodes=True)
     config_help = doc.config_help(command_name="my_command_name")
 
     assert "my_command_name" in config_help
@@ -435,7 +436,7 @@ def test_command_documentation_config_help(monkeypatch):
 def test_command_documentation_command_help():
     """Test `CommandDocumentation.command_help`."""
 
-    doc = CommandDocumentation(func_no_args, is_split_spatially=True)
+    doc = CommandDocumentation(func_no_args, is_split_across_nodes=True)
     command_help = doc.command_help(command_name="my_command_name")
 
     assert "my_command_name" in command_help
@@ -466,7 +467,7 @@ def test_command_documentation_multiple_functions():
         pass
 
     doc = CommandDocumentation(
-        func, _func2, skip_params={"a"}, is_split_spatially=True
+        func, _func2, skip_params={"a"}, is_split_across_nodes=True
     )
 
     assert len(doc.signatures) == 2
@@ -505,7 +506,7 @@ def test_command_documentation_no_docstring():
         pass
 
     doc = CommandDocumentation(
-        _func, skip_params={"a"}, is_split_spatially=True
+        _func, skip_params={"a"}, is_split_across_nodes=True
     )
     assert len(doc.signatures) == 1
 
@@ -580,7 +581,7 @@ def test_command_documentation_for_class():
         getattr(TestCommand, "func"),
         preprocessor,
         skip_params={"a"},
-        is_split_spatially=True,
+        is_split_across_nodes=True,
     )
     assert len(doc.signatures) == 3
 
@@ -686,7 +687,7 @@ def test_command_documentation_duplicate_params():
         getattr(TestCommand, "func"),
         preprocessor,
         skip_params={"a"},
-        is_split_spatially=True,
+        is_split_across_nodes=True,
     )
     assert len(doc.signatures) == 3
 
@@ -728,7 +729,6 @@ def test_command_documentation_duplicate_params():
         "another_input": doc.REQUIRED_TAG,
     }
     assert doc.template_config == expected_config
-
 
 
 if __name__ == "__main__":

@@ -356,7 +356,7 @@ class CLICommandFromFunction(AbstractBaseCLICommandConfiguration):
             self.runner,
             self.config_preprocessor,
             skip_params=GAPS_SUPPLIED_ARGS | self.skip_doc_params,
-            is_split_spatially=self.is_split_spatially,
+            is_split_across_nodes=self.is_split_spatially,
         )
 
 
@@ -683,7 +683,7 @@ class CLICommandFromClass(AbstractBaseCLICommandConfiguration):
             getattr(self.runner, self.run_method),
             self.config_preprocessor,
             skip_params=GAPS_SUPPLIED_ARGS | self.skip_doc_params,
-            is_split_spatially=self.is_split_spatially,
+            is_split_across_nodes=self.is_split_spatially,
         )
 
 
