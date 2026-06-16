@@ -6,12 +6,11 @@ from pathlib import Path
 
 import pytest
 
+from gaps.cli.command import CLICommandFromFunction
+from gaps.cli.config import from_config
 from gaps.status import Status, StatusField
 from gaps.pipeline import Pipeline
-from gaps.cli.preprocessing import (
-    preprocess_collect_config,
-    split_project_points_into_ranges,
-)
+from gaps.cli.preprocessing import preprocess_collect_config
 from gaps.utilities import TAG
 from gaps.exceptions import gapsConfigError
 from gaps.warn import gapsWarning
@@ -23,6 +22,20 @@ SAMPLE_CONFIG = {
         {"collect-run": "./collect_config.json"},
     ],
 }
+
+
+def _record_project_points_split_range(project_points, out_dir, tag):
+    """Record the project point subset received by a node."""
+
+    out_fp = Path(out_dir) / f"split-range{tag}.json"
+    out = {
+        "split_range": project_points.split_range,
+        "len_pp": len(project_points),
+    }
+    with out_fp.open("w", encoding="utf-8") as out_file:
+        json.dump(out, out_file)
+
+    return out_fp.as_posix()
 
 
 def test_preprocess_collect_config(tmp_path):
@@ -79,7 +92,7 @@ def test_preprocess_collect_config_dict_input(tmp_path):
 def test_preprocess_collect_config_pipeline_input(tmp_path):
     """Test `preprocess_collect_config` function with "PIPELINE" input"""
     config_fp = tmp_path / "pipe_config.json"
-    with open(config_fp, "w") as file_:
+    with Path(config_fp).open("w", encoding="utf-8") as file_:
         json.dump(SAMPLE_CONFIG, file_)
 
     (tmp_path / "config.json").touch()
@@ -116,7 +129,7 @@ def test_preprocess_collect_config_pipeline_input_ignores_untagged_file(
 ):
     """Test that PIPELINE collection patterns do not match untagged files."""
     config_fp = tmp_path / "pipe_config.json"
-    with open(config_fp, "w") as file_:
+    with Path(config_fp).open("w", encoding="utf-8") as file_:
         json.dump(SAMPLE_CONFIG, file_)
 
     (tmp_path / "config.json").touch()
@@ -137,33 +150,53 @@ def test_preprocess_collect_config_pipeline_input_ignores_untagged_file(
     config = preprocess_collect_config({}, tmp_path, "collect-run")
 
     matched_files = sorted(
-        Path(path) for path in glob.glob(config["_pattern"][0])
+        Path(path)
+        for path in glob.glob(config["_pattern"][0])  # noqa
     )
     assert matched_files == [job_file]
 
 
-def test_split_project_points_into_ranges():
-    """Test the `split_project_points_into_ranges` function."""
+@pytest.mark.parametrize(
+    ("execution_control", "expected_ranges"),
+    [
+        (None, [(0, 4)]),
+        ({}, [(0, 4)]),
+        ({"option": "local", "nodes": 2}, [(0, 4)]),
+        ({"nodes": 2}, [(0, 2), (2, 4)]),
+    ],
+)
+def test_split_project_points_into_ranges_from_config(
+    tmp_path, test_ctx, runnable_script, execution_control, expected_ranges
+):
+    """Test project point range splitting through `from_config`."""
 
     config = {"project_points": [0, 1, 2, 3]}
-    config = split_project_points_into_ranges(config, 1)
-    assert config["project_points_split_range"] == [(0, 4)]
-    config.pop("project_points_split_range")
+    if execution_control is not None:
+        config["execution_control"] = execution_control
 
-    config["execution_control"] = {}
-    config = split_project_points_into_ranges(config, 1)
-    assert config["project_points_split_range"] == [(0, 4)]
-    config.pop("project_points_split_range")
+    config_fp = tmp_path / "config.json"
+    with config_fp.open("w", encoding="utf-8") as config_file:
+        json.dump(config, config_file)
 
-    config["execution_control"] = {"option": "local", "nodes": 2}
-    config = split_project_points_into_ranges(config, 1)
-    assert config["project_points_split_range"] == [(0, 4)]
-    config.pop("project_points_split_range")
+    command_config = CLICommandFromFunction(
+        _record_project_points_split_range,
+        name="run",
+        split_keys={"project_points"},
+    )
 
-    config["execution_control"] = {"nodes": 2}
-    config = split_project_points_into_ranges(config, 2)
-    assert config["project_points_split_range"] == [(0, 2), (2, 4)]
-    # assert "nodes" not in config["execution_control"]
+    from_config(config_fp, command_config)
+
+    output_files = sorted(tmp_path.glob("split-range*.json"))
+    observed_ranges = []
+    observed_lengths = []
+    for output_file in output_files:
+        with output_file.open("r", encoding="utf-8") as file_:
+            output = json.load(file_)
+        observed_ranges.append(tuple(output["split_range"]))
+        observed_lengths.append(output["len_pp"])
+
+    assert observed_ranges == expected_ranges
+    assert observed_lengths == [end - start for start, end in expected_ranges]
 
 
 if __name__ == "__main__":
