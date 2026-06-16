@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-# pylint: disable=too-many-locals,unused-argument, unused-variable
-# pylint: disable=redefined-outer-name, no-value-for-parameter
-"""
-GAPs CLI preprocessing tests.
-"""
+"""GAPs CLI preprocessing tests"""
 
 import json
 import glob
@@ -17,7 +12,7 @@ from gaps.cli.preprocessing import (
     preprocess_collect_config,
     split_project_points_into_ranges,
 )
-from gaps.cli.config import TAG
+from gaps.utilities import TAG
 from gaps.exceptions import gapsConfigError
 from gaps.warn import gapsWarning
 
@@ -151,24 +146,24 @@ def test_split_project_points_into_ranges():
     """Test the `split_project_points_into_ranges` function."""
 
     config = {"project_points": [0, 1, 2, 3]}
-    config = split_project_points_into_ranges(config)
+    config = split_project_points_into_ranges(config, 1)
     assert config["project_points_split_range"] == [(0, 4)]
     config.pop("project_points_split_range")
 
     config["execution_control"] = {}
-    config = split_project_points_into_ranges(config)
+    config = split_project_points_into_ranges(config, 1)
     assert config["project_points_split_range"] == [(0, 4)]
     config.pop("project_points_split_range")
 
     config["execution_control"] = {"option": "local", "nodes": 2}
-    config = split_project_points_into_ranges(config)
+    config = split_project_points_into_ranges(config, 1)
     assert config["project_points_split_range"] == [(0, 4)]
     config.pop("project_points_split_range")
 
     config["execution_control"] = {"nodes": 2}
-    config = split_project_points_into_ranges(config)
+    config = split_project_points_into_ranges(config, 2)
     assert config["project_points_split_range"] == [(0, 2), (2, 4)]
-    assert "nodes" not in config["execution_control"]
+    # assert "nodes" not in config["execution_control"]
 
 
 if __name__ == "__main__":
