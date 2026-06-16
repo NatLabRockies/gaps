@@ -307,6 +307,12 @@ class CLICommandFromFunction(AbstractBaseCLICommandConfiguration):
                     empty dictionary, especially if the user is
                     performing a local run. Be sure to use ``.get`` to
                     extract relevant parameters.
+                nodes : int
+                    Number of nodes requested by the user for this
+                    command. For local execution this value is always
+                    ``1``. Otherwise, it is taken from the
+                    ``execution_control`` block and defaults to ``1``
+                    if unspecified.
                 log_directory : Path
                     Path to log output directory (defaults to
                     project_dir / "logs").
@@ -627,6 +633,12 @@ class CLICommandFromClass(AbstractBaseCLICommandConfiguration):
                     Also note that this string *WILL NOT* contain a
                     file-ending, so that will have to be added by the
                     node function.
+                nodes : int
+                    Number of nodes requested by the user for this
+                    command. For local execution this value is always
+                    ``1``. Otherwise, it is taken from the
+                    ``execution_control`` block and defaults to ``1``
+                    if unspecified.
                 log_directory : Path
                     Path to log output directory (defaults to
                     project_dir / "logs").

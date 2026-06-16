@@ -38,6 +38,10 @@ def _record_project_points_split_range(project_points, out_dir, tag):
     return out_fp.as_posix()
 
 
+def _noop_run_function():
+    """No-op run function used to exercise config preprocessing."""
+
+
 def test_preprocess_collect_config(tmp_path):
     """Test `preprocess_collect_config` function"""
 
@@ -197,6 +201,63 @@ def test_split_project_points_into_ranges_from_config(
 
     assert observed_ranges == expected_ranges
     assert observed_lengths == [end - start for start, end in expected_ranges]
+
+
+@pytest.mark.parametrize(
+    ("execution_control", "expected_nodes"),
+    [
+        (None, 1),
+        ({}, 1),
+        ({"option": "local", "nodes": 2}, 1),
+        (
+            {
+                "option": "kestrel",
+                "allocation": "test-allocation",
+                "walltime": 1,
+                "nodes": 3,
+                "num_test_nodes": 0,
+            },
+            3,
+        ),
+    ],
+)
+def test_preprocessor_receives_nodes_from_execution_control(
+    tmp_path, test_ctx, execution_control, expected_nodes, monkeypatch
+):
+    """Test preprocessing functions receive normalized user node input."""
+
+    config = {}
+    if execution_control is not None:
+        config["execution_control"] = execution_control
+
+    config_fp = tmp_path / "config.json"
+    with config_fp.open("w", encoding="utf-8") as config_file:
+        json.dump(config, config_file)
+
+    monkeypatch.setattr("gaps.cli.config.kickoff_job", lambda *_, **__: None)
+
+    observed = {}
+
+    def preprocess_config(config, nodes):
+        observed["nodes"] = nodes
+        return config
+
+    command_config = CLICommandFromFunction(
+        _noop_run_function,
+        name="run",
+        config_preprocessor=preprocess_config,
+    )
+
+    from_config(config_fp, command_config)
+
+    assert observed["nodes"] == expected_nodes
+    assert (
+        command_config.documentation.template_config["execution_control"][
+            "nodes"
+        ]
+        == 1
+    )
+    assert ":nodes:" in command_config.documentation.exec_control_doc
 
 
 if __name__ == "__main__":
