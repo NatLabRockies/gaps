@@ -7,15 +7,14 @@ from warnings import warn
 from collections import abc
 
 from gaps.project_points import ProjectPoints
-from gaps.cli.config import TAG
 from gaps.pipeline import parse_previous_status
-from gaps.utilities import resolve_path
+from gaps.utilities import resolve_path, TAG
 from gaps.exceptions import gapsConfigError
 
 from gaps.warn import gapsWarning
 
 
-def split_project_points_into_ranges(config):
+def split_project_points_into_ranges(config, nodes):
     """Split project points into ranges inside of config
 
     Parameters
@@ -24,6 +23,10 @@ def split_project_points_into_ranges(config):
         Run config. This config must have a "project_points" input that
         can be used to initialize
         :class:`gaps.project_points.ProjectPoints`.
+    nodes : int
+        Number of nodes to split the project points across. This input
+        is used to determine how many project points should be included
+        in each split range.
 
     Returns
     -------
@@ -32,14 +35,8 @@ def split_project_points_into_ranges(config):
         the project points into multiple ranges based on node input.
     """
     project_points_file = config["project_points"]
-    exec_control = config.get("execution_control", {})
-    if exec_control.get("option") == "local":
-        num_nodes = 1
-    else:
-        num_nodes = exec_control.pop("nodes", 1)
-
     points = ProjectPoints(project_points_file)
-    sites_per_split = ceil(len(points) / num_nodes)
+    sites_per_split = ceil(len(points) / nodes)
     config["project_points_split_range"] = [
         sub_points.split_range
         for sub_points in points.split(sites_per_split=sites_per_split)
