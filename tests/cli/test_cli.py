@@ -16,9 +16,9 @@ from gaps import Pipeline
 import gaps.cli.cli as cli_module
 from gaps.status import Status, StatusOption
 from gaps.cli import CLICommandFromFunction, make_cli
-from gaps.cli.config import TAG
 from gaps.cli.documentation import CommandDocumentation
 from gaps.cli.pipeline import _can_run_background
+from gaps.utilities import TAG
 
 
 PROJECT_POINTS = [0, 1, 2]
@@ -368,10 +368,9 @@ def test_cli_monitor(
         assert collect_config["collect_pattern"] == "PIPELINE"
 
         assert "collect-run_collect_pattern" in collected_outputs.attrs
-        assert (
-            Path(collected_outputs.attrs["collect-run_collect_pattern"])
-            == tmp_cwd / file_pattern.replace("*", f"{TAG}*")
-        )
+        assert Path(
+            collected_outputs.attrs["collect-run_collect_pattern"]
+        ) == tmp_cwd / file_pattern.replace("*", f"{TAG}*")
 
     profiles = manual_collect(data_dir / file_pattern, "cf_profile")
     assert np.allclose(profiles, cf_profiles)
@@ -485,10 +484,9 @@ def test_cli_background(
         assert collect_config["collect_pattern"] == "PIPELINE"
 
         assert "collect-run_collect_pattern" in collected_outputs.attrs
-        assert (
-            Path(collected_outputs.attrs["collect-run_collect_pattern"])
-            == tmp_cwd / file_pattern.replace("*", f"{TAG}*")
-        )
+        assert Path(
+            collected_outputs.attrs["collect-run_collect_pattern"]
+        ) == tmp_cwd / file_pattern.replace("*", f"{TAG}*")
 
     profiles = manual_collect(data_dir / file_pattern, "cf_profile")
     assert np.allclose(profiles, cf_profiles)
