@@ -50,6 +50,7 @@ GAPS_SUPPLIED_ARGS = {
     "out_dir",
     "out_fpath",
     "config",
+    "nodes",
     "log_directory",
     "verbose",
 }

@@ -251,6 +251,7 @@ def test_preprocessor_receives_nodes_from_execution_control(
     from_config(config_fp, command_config)
 
     assert observed["nodes"] == expected_nodes
+    assert "nodes" not in command_config.documentation.template_config
     assert (
         command_config.documentation.template_config["execution_control"][
             "nodes"
