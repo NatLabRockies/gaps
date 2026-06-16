@@ -48,11 +48,7 @@ def test_cli_command_configuration():
     assert len(ccc.documentation.signatures) == 2
 
     config_in = {"project_points": [0, 1]}
-    expected_out = {
-        "project_points": [0, 1],
-        "project_points_split_range": [(0, 2)],
-        "name": "test",
-    }
+    expected_out = {"project_points": [0, 1], "name": "test"}
     assert ccc.config_preprocessor(config_in, "test") == expected_out
 
     config_in = {"project_points": [0, 1]}

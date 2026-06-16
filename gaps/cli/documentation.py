@@ -391,7 +391,9 @@ class CommandDocumentation:
     REQUIRED_TAG = "[REQUIRED]"
     """Tag to indicate required parameters in generated templates"""
 
-    def __init__(self, *functions, skip_params=None, is_split_spatially=False):
+    def __init__(
+        self, *functions, skip_params=None, is_split_across_nodes=False
+    ):
         """
         Parameters
         ----------
@@ -403,9 +405,9 @@ class CommandDocumentation:
             Set of parameter names (str) to exclude from documentation.
             Typically this is because the user would not explicitly have
             to specify these. By default, `None`.
-        is_split_spatially : bool, optional
-            Flag indicating whether or not this function is split
-            spatially across nodes. If `True`, a "nodes" option is added
+        is_split_across_nodes : bool, optional
+            Flag indicating whether or not this function execution is
+            split across nodes. If `True`, a "nodes" option is added
             to the execution control block of the generated
             documentation. By default, `False`.
         """
@@ -421,13 +423,13 @@ class CommandDocumentation:
         }
         self.skip_params = set() if skip_params is None else set(skip_params)
         self.skip_params |= {"cls", "self"} | set(EXTRA_EXEC_PARAMS)
-        self.is_split_spatially = is_split_spatially
+        self.is_split_across_nodes = is_split_across_nodes
 
     @property
     def default_exec_values(self):
         """dict: Default "execution_control" config"""
         exec_vals = deepcopy(DEFAULT_EXEC_VALUES)
-        if not self.is_split_spatially:
+        if not self.is_split_across_nodes:
             exec_vals.pop("nodes", None)
         for param in EXTRA_EXEC_PARAMS:
             if self._param_in_func_signature(param):
@@ -441,7 +443,7 @@ class CommandDocumentation:
     @property
     def exec_control_doc(self):
         """str: Execution_control documentation"""
-        nodes_doc = NODES_DOC if self.is_split_spatially else ""
+        nodes_doc = NODES_DOC if self.is_split_across_nodes else ""
         hardware_options = str([f"{opt}" for opt in HardwareOption])
         hardware_options = hardware_options.replace("[", "{").replace("]", "}")
         return EXEC_CONTROL_DOC.format(

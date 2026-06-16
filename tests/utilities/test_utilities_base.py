@@ -1,10 +1,10 @@
 """GAPs base utilities tests"""
+
 from pathlib import Path
 
 import pytest
 
-from gaps.utilities import recursively_update_dict, resolve_path
-from gaps.exceptions import gapsValueError
+from gaps.utilities import node_tag, recursively_update_dict, resolve_path
 
 
 TEST_1_ATTRS_1 = {"job_name": "test1", "job_status": "R", "run_id": 1234}
@@ -53,6 +53,22 @@ def test_resolve_path():
         == Path("test_dir").resolve().parent.as_posix()
     )
     assert resolve_path("~/test_dir/../", base_dir) == Path.home().as_posix()
+
+
+@pytest.mark.parametrize(
+    ("node_index", "num_jobs", "expected"),
+    [
+        (0, 1, ""),
+        (0, 2, "_j0"),
+        (3, 10, "_j3"),
+        (3, 11, "_j03"),
+        (12, 101, "_j012"),
+    ],
+)
+def test_node_tag(node_index, num_jobs, expected):
+    """Test node tag generation across job counts."""
+
+    assert node_tag(node_index, num_jobs) == expected
 
 
 if __name__ == "__main__":

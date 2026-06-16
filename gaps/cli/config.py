@@ -18,6 +18,8 @@ from gaps.config import load_config
 from gaps.log import init_logger
 from gaps.cli.execution import kickoff_job
 from gaps.cli.documentation import EXTRA_EXEC_PARAMS
+from gaps.cli.preprocessing import split_project_points_into_ranges
+from gaps.utilities import node_tag
 from gaps.exceptions import gapsKeyError
 from gaps.warn import gapsWarning
 
@@ -34,7 +36,6 @@ _CMD_LIST = [
         ")"
     ),
 ]
-TAG = "_j"
 MAX_AU_BEFORE_WARNING = {
     "eagle": 10_000,
     "kestrel": 35_000,
@@ -49,6 +50,7 @@ GAPS_SUPPLIED_ARGS = {
     "out_dir",
     "out_fpath",
     "config",
+    "nodes",
     "log_directory",
     "verbose",
 }
@@ -84,9 +86,9 @@ class _FromConfig:
         self.exec_kwargs = None
         self.logging_options = None
         self.exclude_from_status = None
+        self._num_nodes = self._get_num_nodes()
         self._include_tag_in_out_fpath = (
-            self.command_config.is_split_spatially
-            and self.config.get("execution_control", {}).get("nodes", 1) > 1
+            self.command_config.is_split_across_nodes and self._num_nodes > 1
         )
 
     @property
@@ -110,6 +112,13 @@ class _FromConfig:
         return "_".join(
             [self.project_dir.name, self.command_name.replace("-", "_")]
         )
+
+    def _get_num_nodes(self):
+        """Get number of nodes requested by user"""
+        exec_control = self.config.get("execution_control", {})
+        if exec_control.get("option") == "local":
+            return 1
+        return exec_control.pop("nodes", 1)
 
     def enable_logging(self):
         """Enable logging based on config file input"""
@@ -149,6 +158,7 @@ class _FromConfig:
             "log_directory": self.log_directory,
             "verbose": self.verbose,
             "execution_control": self.config.get("execution_control", {}),
+            "nodes": self._num_nodes,
         }
         extra_preprocessor_kwargs = {
             k: self.config[k]
@@ -170,6 +180,10 @@ class _FromConfig:
         self.config = self.command_config.config_preprocessor(
             **preprocessor_kwargs
         )
+        if self.command_config.is_split_spatially:
+            self.config = split_project_points_into_ranges(
+                self.config, self._num_nodes
+            )
         return self
 
     def set_exec_kwargs(self):
@@ -280,7 +294,7 @@ class _FromConfig:
             if node_index >= num_test_nodes:
                 return
 
-            tag = _tag(node_index, num_jobs_submit)
+            tag = node_tag(node_index, num_jobs_submit)
             self.ctx.obj["NAME"] = f"{self.job_name}{tag}"
             yield tag, values, exec_kwargs
 
@@ -498,14 +512,6 @@ def _project_points_last(key):
             return (chr(0x10FFFF),)  # PEP 393
         return (key,)
     return key
-
-
-def _tag(node_index, num_jobs):
-    """Determine node tag based on total number of jobs"""
-    n_zfill = len(str(max(0, num_jobs - 1)))
-    if num_jobs > 1:
-        return f"{TAG}{str(node_index).zfill(n_zfill)}"
-    return ""
 
 
 def as_script_str(input_):

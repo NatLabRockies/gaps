@@ -1,14 +1,13 @@
 """GAPs command configuration preprocessing functions"""
 
 from abc import ABC, abstractmethod
-from functools import cached_property, wraps
+from functools import cached_property
 from inspect import signature
 
 import click
 
 from gaps.cli.config import GAPS_SUPPLIED_ARGS
 from gaps.cli.documentation import CommandDocumentation
-from gaps.cli.preprocessing import split_project_points_into_ranges
 from gaps.utilities.base import _is_sphinx_build
 
 
@@ -33,7 +32,7 @@ class AbstractBaseCLICommandConfiguration(ABC):
     ):
         self.name = name
         self.add_collect = add_collect
-        self.split_keys = set() if split_keys is None else set(split_keys)
+        self._split_keys = split_keys
         self.config_preprocessor = config_preprocessor or _passthrough
         self.skip_doc_params = (
             set() if skip_doc_params is None else set(skip_doc_params)
@@ -45,22 +44,27 @@ class AbstractBaseCLICommandConfiguration(ABC):
             for name, param in preprocessor_sig.parameters.items()
             if param.default != param.empty
         }
-        if self.is_split_spatially:
-            self._add_split_on_points()
 
-    def _add_split_on_points(self):
-        """Add split points preprocessing"""
-        self.config_preprocessor = _split_points(self.config_preprocessor)
-        self.split_keys -= {"project_points"}
-        self.split_keys |= {"project_points_split_range"}
+    @property
+    def split_keys(self):  # TODO: eventually this should be a cached property
+        """set: Set of split keys to use for command run"""
+        split_keys = (
+            set() if self._split_keys is None else set(self._split_keys)
+        )
+        if "project_points" in split_keys:
+            split_keys -= {"project_points"}
+            split_keys |= {"project_points_split_range"}
+        return split_keys
 
     @property
     def is_split_spatially(self):
+        """bool: ``True`` if execution is split across project points"""
+        return "project_points_split_range" in self.split_keys
+
+    @property
+    def is_split_across_nodes(self):
         """bool: ``True`` if execution is split across nodes"""
-        return any(
-            key in self.split_keys
-            for key in ["project_points", "project_points_split_range"]
-        )
+        return self.is_split_spatially or "nodes" in self.preprocessor_args
 
     @property
     @abstractmethod
@@ -303,6 +307,12 @@ class CLICommandFromFunction(AbstractBaseCLICommandConfiguration):
                     empty dictionary, especially if the user is
                     performing a local run. Be sure to use ``.get`` to
                     extract relevant parameters.
+                nodes : int
+                    Number of nodes requested by the user for this
+                    command. For local execution this value is always
+                    ``1``. Otherwise, it is taken from the
+                    ``execution_control`` block and defaults to ``1``
+                    if unspecified.
                 log_directory : Path
                     Path to log output directory (defaults to
                     project_dir / "logs").
@@ -356,7 +366,7 @@ class CLICommandFromFunction(AbstractBaseCLICommandConfiguration):
             self.runner,
             self.config_preprocessor,
             skip_params=GAPS_SUPPLIED_ARGS | self.skip_doc_params,
-            is_split_spatially=self.is_split_spatially,
+            is_split_across_nodes=self.is_split_across_nodes,
         )
 
 
@@ -379,7 +389,7 @@ def CLICommandConfiguration(  # noqa: N802
         function,
         name=name,
         add_collect=any(
-            key in split_keys
+            key in (split_keys or set())
             for key in ["project_points", "project_points_split_range"]
         ),
         split_keys=split_keys,
@@ -623,6 +633,12 @@ class CLICommandFromClass(AbstractBaseCLICommandConfiguration):
                     Also note that this string *WILL NOT* contain a
                     file-ending, so that will have to be added by the
                     node function.
+                nodes : int
+                    Number of nodes requested by the user for this
+                    command. For local execution this value is always
+                    ``1``. Otherwise, it is taken from the
+                    ``execution_control`` block and defaults to ``1``
+                    if unspecified.
                 log_directory : Path
                     Path to log output directory (defaults to
                     project_dir / "logs").
@@ -683,24 +699,13 @@ class CLICommandFromClass(AbstractBaseCLICommandConfiguration):
             getattr(self.runner, self.run_method),
             self.config_preprocessor,
             skip_params=GAPS_SUPPLIED_ARGS | self.skip_doc_params,
-            is_split_spatially=self.is_split_spatially,
+            is_split_across_nodes=self.is_split_across_nodes,
         )
 
 
 def _passthrough(config):
     """Pass the input config through with no modifications"""
     return config
-
-
-def _split_points(config_preprocessor):
-    """Add the `split_project_points_into_ranges` to preprocessing"""
-
-    @wraps(config_preprocessor)
-    def _config_preprocessor(config, *args, **kwargs):
-        config = config_preprocessor(config, *args, **kwargs)
-        return split_project_points_into_ranges(config)
-
-    return _config_preprocessor
 
 
 class _WrappedCommand(click.Command):

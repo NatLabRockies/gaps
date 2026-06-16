@@ -8943,7 +8943,7 @@ packages:
   - ruff>=0.15.16,<0.16 ; extra == 'dev'
   - flaky>=3.8.1,<4 ; extra == 'test'
   - h5py>=3.13.0,<4 ; extra == 'test'
-  - pytest>=8.3.5,<9 ; extra == 'test'
+  - pytest>=8.3.5,<9.1 ; extra == 'test'
   - pytest-cases>=3.8.6,<4 ; extra == 'test'
   - pytest-cov>=3.0 ; extra == 'test'
   - pytest-profiling>=1.7.0,<2 ; extra == 'test'

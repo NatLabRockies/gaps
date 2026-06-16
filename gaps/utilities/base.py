@@ -9,6 +9,7 @@ from pathlib import Path
 
 
 logger = logging.getLogger(__name__)
+TAG = "_j"
 
 
 def recursively_update_dict(existing, new):
@@ -85,6 +86,30 @@ def resolve_path(path, base_dir):
         path = path.expanduser().resolve().as_posix()
 
     return path
+
+
+def node_tag(node_index, num_jobs):
+    """Determine node tag based on total number of jobs
+
+    Parameters
+    ----------
+    node_index : int
+        Index of node for which to determine tag.
+    num_jobs : int
+        Total number of jobs in the run.
+
+    Returns
+    -------
+    str
+        The tag for the node, which is an empty string if there is only
+        one job, and otherwise is the value of ``TAG`` followed by the
+        node index, zero-padded to the number of digits in
+        ``num_jobs - 1``.
+    """
+    n_zfill = len(str(max(0, num_jobs - 1)))
+    if num_jobs > 1:
+        return f"{TAG}{str(node_index).zfill(n_zfill)}"
+    return ""
 
 
 def _is_sphinx_build():

@@ -15,7 +15,6 @@ from gaps.cli.command import (
 )
 from gaps.cli.documentation import CommandDocumentation
 from gaps.cli.config import (
-    TAG,
     as_script_str,
     from_config,
     run_with_status_updates,
@@ -23,6 +22,7 @@ from gaps.cli.config import (
 )
 from gaps.exceptions import gapsKeyError
 from gaps.warn import gapsWarning
+from gaps.utilities import TAG
 
 
 def _testing_function(  # noqa: PLR0913, PLR0917
