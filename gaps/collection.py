@@ -49,13 +49,7 @@ class _OutputsWithAliases(Outputs):
 
     @property
     def full_version_record(self):
-        """Get record of versions for dependencies
-
-        Returns
-        -------
-        dict
-            Dictionary of package versions for dependencies
-        """
+        """dict: Record of versions for dependencies"""
         versions = super().full_version_record
         versions["gaps"] = __version__
         return versions
