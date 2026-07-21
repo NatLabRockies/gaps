@@ -256,7 +256,7 @@ Path to the ``{name}`` configuration file. {sample_config}
 {docstring}
 
 Note that you may remove any keys with a ``null`` value if you do not intend to update them yourself.
-"""  # noqa: E501
+"""  # ruff:ignore[line-too-long]
 SAMPLE_CONFIG_DOC = """Below is a sample template config
 
 .. tabs::
@@ -606,7 +606,7 @@ class CommandDocumentation:
         doc = COMMAND_DOC.format(name=command_name, desc=self.extended_summary)
         return _cli_formatted(doc)
 
-    @lru_cache(maxsize=16)  # noqa: B019
+    @lru_cache(maxsize=16)  # ruff:ignore[cached-instance-method]
     def _param_value(self, param):
         """Extract parameter if it exists in signature"""
         for sig in self.signatures:
@@ -615,12 +615,12 @@ class CommandDocumentation:
                     return sig.parameters[param]
         return None
 
-    @lru_cache(maxsize=16)  # noqa: B019
+    @lru_cache(maxsize=16)  # ruff:ignore[cached-instance-method]
     def _param_in_func_signature(self, param):
         """`True` if `param` is a param of the input function"""
         return self._param_value(param) is not None
 
-    @lru_cache(maxsize=16)  # noqa: B019
+    @lru_cache(maxsize=16)  # ruff:ignore[cached-instance-method]
     def param_required(self, param):
         """Check whether a parameter is required for the run function
 
@@ -752,7 +752,7 @@ def _as_functions(functions):
     """Yield from input, converting all classes to their __init__"""
     for func in functions:
         if isclass(func):
-            func = func.__init__  # noqa: PLW2901
+            func = func.__init__  # ruff:ignore[redefined-loop-name]
         yield func
 
 
@@ -778,12 +778,12 @@ def _format_lines(lines):
         if _line_needs_newline(line):
             current_line = " ".join(current_line)
             if current_line:
-                line = f"{current_line}\n{line}"  # noqa: PLW2901
+                line = f"{current_line}\n{line}"  # ruff:ignore[redefined-loop-name]
             new_lines.append(line)
             current_line = []
         else:
             if current_line:
-                line = line.lstrip()  # noqa: PLW2901
+                line = line.lstrip()  # ruff:ignore[redefined-loop-name]
             current_line.append(line)
 
     return new_lines

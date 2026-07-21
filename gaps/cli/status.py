@@ -68,7 +68,7 @@ def _filter_df_for_status(df, status_request):
 
     filter_statuses = set()
     for request in status_request:
-        request = request.lower()  # noqa: PLW2901
+        request = request.lower()  # ruff:ignore[redefined-loop-name]
         if request in FAILURE_STRINGS:
             filter_statuses |= {StatusOption.FAILED}
         elif request in SUCCESS_STRINGS:
@@ -250,7 +250,7 @@ def _print_au_usage(total_aus_used):
 
 def _print_total_walltime(walltime):
     """Print the total project walltime"""
-    if walltime <= 2:  # noqa: PLR2004
+    if walltime <= 2:  # ruff:ignore[magic-value-comparison]
         return
     walltime_str = (
         f"Total project wall time (including queue and downtime "

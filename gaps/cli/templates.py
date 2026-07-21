@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 @click.pass_context
-def _make_template_config(ctx, commands, type, configs):  # noqa: A002
+def _make_template_config(ctx, commands, type, configs):  # ruff:ignore[builtin-argument-shadowing]
     """Filter configs and write to file based on type"""
     if ctx.obj.get("VERBOSE"):
         init_logger("gaps")

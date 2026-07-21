@@ -178,7 +178,7 @@ def _validate_patterns(files):
     patterns_with_no_files = []
     files_to_collect = []
     for out, pattern in files:
-        if glob.glob(pattern):  # noqa: PTH207
+        if glob.glob(pattern):  # ruff:ignore[glob]
             files_to_collect.append((out, pattern))
         else:
             patterns_with_no_files.append(pattern)

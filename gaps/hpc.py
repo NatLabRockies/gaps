@@ -4,7 +4,7 @@ import re
 import shlex
 import logging
 import getpass
-import subprocess  # noqa: S404
+import subprocess  # ruff:ignore[suspicious-subprocess-import]
 from math import floor
 from pathlib import Path
 from warnings import warn
@@ -159,7 +159,7 @@ class HpcJobManager(ABC):
         elif isinstance(arg, (int, str)):
             cmd = f"{self.COMMANDS.CANCEL} {arg}"
             cmd = shlex.split(cmd)
-            subprocess.call(cmd)  # noqa: S603
+            subprocess.call(cmd)  # ruff:ignore[subprocess-without-shell-equals-true]
 
         else:
             msg = f"Could not cancel: {arg} with type {type(arg)}"
@@ -295,19 +295,19 @@ class HpcJobManager(ABC):
 
     @property
     @abstractmethod
-    def COLUMN_HEADERS(self):  # noqa: N802
+    def COLUMN_HEADERS(self):  # ruff:ignore[invalid-function-name]
         """`namedtuple`: Column header names"""
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def COMMANDS(self):  # noqa: N802
+    def COMMANDS(self):  # ruff:ignore[invalid-function-name]
         """`namedtuple`: Command names"""
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def Q_SUBMITTED_STATUS(self):  # noqa: N802
+    def Q_SUBMITTED_STATUS(self):  # ruff:ignore[invalid-function-name]
         """str: String representing the submitted status for manager"""
         raise NotImplementedError
 
@@ -346,7 +346,7 @@ class PBS(HpcJobManager):
         """Check whether the job is submitted/running"""
         return self.check_status_using_job_name(name) in {"Q", "R"}
 
-    def make_script_str(  # noqa: PLR6301, PLR0913, PLR0917
+    def make_script_str(  # ruff:ignore[no-self-use, too-many-arguments, too-many-positional-arguments]
         self,
         name,
         cmd,
@@ -472,7 +472,7 @@ class SLURM(HpcJobManager):
         """Check whether the job is submitted/running"""
         return self.check_status_using_job_name(name) is not None
 
-    def make_script_str(  # noqa: PLR6301
+    def make_script_str(  # ruff:ignore[no-self-use]
         self,
         name,
         cmd,
@@ -589,7 +589,7 @@ def _subprocess_popen(cmd):
     cmd = shlex.split(cmd)
 
     # use subprocess to submit command and get piped o/e
-    process = subprocess.Popen(  # noqa: S603
+    process = subprocess.Popen(  # ruff:ignore[subprocess-without-shell-equals-true]
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     stdout, stderr = process.communicate()
@@ -629,7 +629,7 @@ def _subprocess_run(cmd, background_stdout=False):
     nohup_cmd_fmt += ["&"]
 
     cmd = " ".join(nohup_cmd_fmt).format(cmd)
-    subprocess.run(cmd, shell=True, check=True)  # noqa: S602
+    subprocess.run(cmd, shell=True, check=True)  # ruff:ignore[subprocess-popen-with-shell-equals-true]
 
 
 def submit(cmd, background=False, background_stdout=False):

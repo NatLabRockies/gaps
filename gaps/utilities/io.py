@@ -73,7 +73,7 @@ def parse_points_input_to_df(points, parse_sites_callable=None):
 
     try:
         return (parse_sites_callable or _parse_sites)(points)
-    except Exception:  # noqa
+    except Exception:  # ruff:ignore[blind-except]
         msg = f"Cannot parse project points from input of type {type(points)}"
         raise gapsValueError(msg) from None
 

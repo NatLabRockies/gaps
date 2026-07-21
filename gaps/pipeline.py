@@ -197,7 +197,7 @@ class Pipeline:
 
         return self._get_step_return_code(status, pipe_step.name)
 
-    def _get_step_return_code(self, status, step_name):  # noqa: C901
+    def _get_step_return_code(self, status, step_name):  # ruff:ignore[complex-structure]
         """Get a return code for a pipeline step based on status object
 
         Note that it is assumed a job has been submitted before this
@@ -263,7 +263,7 @@ class Pipeline:
         pipeline : path-like
             Pipeline config file path.
         """
-        cls(pipeline)._cancel_all_jobs()  # noqa: SLF001
+        cls(pipeline)._cancel_all_jobs()  # ruff:ignore[private-member-access]
 
     @classmethod
     def run(cls, pipeline, monitor=True):
@@ -276,7 +276,7 @@ class Pipeline:
         monitor : bool
             Flag to perform continuous monitoring of the pipeline.
         """
-        cls(pipeline, monitor=monitor)._main()  # noqa: SLF001
+        cls(pipeline, monitor=monitor)._main()  # ruff:ignore[private-member-access]
 
 
 def _check_pipeline(config):
@@ -298,7 +298,7 @@ def _check_pipeline(config):
     step_names = set()
     duplicate_names = []
     for pipe_step in pipeline:
-        pipe_step = PipelineStep(pipe_step)  # noqa: PLW2901
+        pipe_step = PipelineStep(pipe_step)  # ruff:ignore[redefined-loop-name]
 
         if pipe_step.name in step_names:
             duplicate_names.append(pipe_step.name)

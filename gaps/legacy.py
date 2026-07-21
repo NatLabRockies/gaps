@@ -42,7 +42,7 @@ class HardwareStatusRetriever(gaps.status.HardwareStatusRetriever):
         """
         super().__init__(subprocess_manager)
         hardware = _as_gaps_hardware(hardware)
-        self.hardware = gaps.status._validate_hardware(hardware)  # noqa
+        self.hardware = gaps.status._validate_hardware(hardware)  # ruff:ignore[private-member-access]
 
     def __getitem__(self, key):
         job_id, __ = key
@@ -94,7 +94,7 @@ class Status(gaps.status.Status):
         hardware = _as_gaps_hardware(hardware)
         hsr = HardwareStatusRetriever(hardware, subprocess_manager)
         status = (
-            cls(status_dir)._retrieve_job_status(module, job_name, hsr)  # noqa
+            cls(status_dir)._retrieve_job_status(module, job_name, hsr)  # ruff:ignore[private-member-access]
         )
         if status == gaps.status.StatusOption.NOT_SUBMITTED:
             status = None
@@ -232,13 +232,13 @@ class Pipeline(gaps.pipeline.Pipeline):
 
     @property
     @abstractmethod
-    def CMD_BASE(self):  # noqa: N802
+    def CMD_BASE(self):  # ruff:ignore[invalid-function-name]
         """str: Formattable string of the base pipeline CLI command"""
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def COMMANDS(self):  # noqa: N802
+    def COMMANDS(self):  # ruff:ignore[invalid-function-name]
         """list: List of pipeline command names (as str)"""
         raise NotImplementedError
 
@@ -342,13 +342,13 @@ class BatchJob(gaps.batch.BatchJob):
 
     @property
     @abstractmethod
-    def PIPELINE_CLASS(self):  # noqa: N802
+    def PIPELINE_CLASS(self):  # ruff:ignore[invalid-function-name]
         """str: Formattable string of the base pipeline CLI command"""
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def PIPELINE_BACKGROUND_METHOD(self):  # noqa: N802
+    def PIPELINE_BACKGROUND_METHOD(self):  # ruff:ignore[invalid-function-name]
         """str: Formattable string of the base pipeline CLI command"""
         raise NotImplementedError
 
@@ -393,7 +393,7 @@ class BatchJob(gaps.batch.BatchJob):
                 self.PIPELINE_CLASS.cancel_all(pipeline_config.as_posix())
 
     @classmethod
-    def cancel_all(cls, config, verbose=False):  # noqa: ARG003
+    def cancel_all(cls, config, verbose=False):  # ruff:ignore[unused-class-method-argument]
         """Cancel all reV pipeline modules for all batch jobs
 
         Parameters
@@ -404,10 +404,10 @@ class BatchJob(gaps.batch.BatchJob):
             Flag to turn on debug logging.
         """
 
-        cls(config)._cancel_all()  # noqa: SLF001
+        cls(config)._cancel_all()  # ruff:ignore[private-member-access]
 
     @classmethod
-    def delete_all(cls, config, verbose=False):  # noqa: ARG003
+    def delete_all(cls, config, verbose=False):  # ruff:ignore[unused-class-method-argument]
         """Delete all reV batch sub job folders based on the job summary
         csv in the batch config directory.
 

@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger("gaps")
 
 
-class gapsError(Exception):  # noqa: N801
+class gapsError(Exception):  # ruff:ignore[invalid-class-name]
     """Generic gaps Error"""
 
     def __init__(self, *args, **kwargs):
@@ -15,41 +15,41 @@ class gapsError(Exception):  # noqa: N801
             logger.error(str(args[0]), stacklevel=2)
 
 
-class gapsConfigError(gapsError):  # noqa: N801
+class gapsConfigError(gapsError):  # ruff:ignore[invalid-class-name]
     """gaps ConfigError"""
 
 
-class gapsExecutionError(gapsError):  # noqa: N801
+class gapsExecutionError(gapsError):  # ruff:ignore[invalid-class-name]
     """gaps ExecutionError"""
 
 
-class gapsFileNotFoundError(gapsError, FileNotFoundError):  # noqa: N801
+class gapsFileNotFoundError(gapsError, FileNotFoundError):  # ruff:ignore[invalid-class-name]
     """gaps FileNotFoundError"""
 
 
-class gapsIndexError(gapsError, IndexError):  # noqa: N801
+class gapsIndexError(gapsError, IndexError):  # ruff:ignore[invalid-class-name]
     """gaps IndexError"""
 
 
-class gapsIOError(gapsError, IOError):  # noqa: N801
+class gapsIOError(gapsError, IOError):  # ruff:ignore[invalid-class-name]
     """gaps IOError"""
 
 
-class gapsKeyError(gapsError, KeyError):  # noqa: N801
+class gapsKeyError(gapsError, KeyError):  # ruff:ignore[invalid-class-name]
     """gaps KeyError"""
 
 
-class gapsRuntimeError(gapsError, RuntimeError):  # noqa: N801
+class gapsRuntimeError(gapsError, RuntimeError):  # ruff:ignore[invalid-class-name]
     """gaps RuntimeError"""
 
 
-class gapsTypeError(gapsError, TypeError):  # noqa: N801
+class gapsTypeError(gapsError, TypeError):  # ruff:ignore[invalid-class-name]
     """gaps TypeError"""
 
 
-class gapsValueError(gapsError, ValueError):  # noqa: N801
+class gapsValueError(gapsError, ValueError):  # ruff:ignore[invalid-class-name]
     """gaps ValueError"""
 
 
-class gapsHPCError(gapsError):  # noqa: N801
+class gapsHPCError(gapsError):  # ruff:ignore[invalid-class-name]
     """gaps HPCError"""

@@ -26,7 +26,7 @@ def _reset_status(ctx, directory, force=False, after_step=None):
         directory = [Path("./")]
 
     for status_dir in directory:
-        status_dir = Path(status_dir).expanduser().resolve()  # noqa: PLW2901
+        status_dir = Path(status_dir).expanduser().resolve()  # ruff:ignore[redefined-loop-name]
         status_file_dir = status_dir / Status.HIDDEN_SUB_DIR
         if not status_file_dir.exists():
             logger.debug(
