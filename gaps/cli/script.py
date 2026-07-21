@@ -25,7 +25,7 @@ def script(_cmd, project_dir):
     str
         Path to HDF5 file with the collected outputs.
     """
-    original_directory = os.getcwd()  # noqa: PTH109
+    original_directory = os.getcwd()  # ruff:ignore[os-getcwd]
     try:
         os.chdir(project_dir)
         stdout, stderr = submit(_cmd)

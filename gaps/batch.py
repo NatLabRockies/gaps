@@ -109,10 +109,10 @@ class BatchJob:
 
             # For each dir level, iterate through the batch arg combos
             for tag, (arg_comb, mod_files, __) in self._sets.items():
-                mod_files = {Path(fp) for fp in mod_files}  # noqa: PLW2901
+                mod_files = {Path(fp) for fp in mod_files}  # ruff:ignore[redefined-loop-name]
                 # Add the job tag to the directory path.
                 # This will copy config subdirs into the job subdirs
-                source_dir = Path(source_dir)  # noqa: PLW2901
+                source_dir = Path(source_dir)  # ruff:ignore[redefined-loop-name]
                 destination_dir = (
                     self._base_dir
                     / tag
@@ -229,7 +229,7 @@ class BatchJob:
         if dry_run:
             return
 
-        cwd = os.getcwd()  # noqa: PTH109
+        cwd = os.getcwd()  # ruff:ignore[os-getcwd]
         try:
             self._run_pipelines(monitor_background=monitor_background)
         finally:

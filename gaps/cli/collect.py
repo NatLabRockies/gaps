@@ -103,7 +103,7 @@ def collect(
 def _find_datasets(datasets, pattern):
     """Find datasets from a sample file"""
 
-    with Resource(glob.glob(pattern)[0]) as res:  # noqa: PTH207
+    with Resource(glob.glob(pattern)[0]) as res:  # ruff:ignore[glob]
         if datasets is None:
             return [
                 d

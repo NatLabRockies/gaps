@@ -340,7 +340,7 @@ class Status(UserDict):
             except (AttributeError, TypeError):
                 continue
             if not status:
-                status = {step: {}}  # noqa: PLW2901
+                status = {step: {}}  # ruff:ignore[redefined-loop-name]
             try:
                 step_df = pd.DataFrame(status).T
             except ValueError:
@@ -485,7 +485,7 @@ class Status(UserDict):
         for status in self.values():
             try:
                 yield from _iter_job_status(status)
-            except AttributeError:  # noqa: PERF203
+            except AttributeError:  # ruff:ignore[try-except-in-loop]
                 continue
 
     @staticmethod
@@ -775,7 +775,7 @@ class Status(UserDict):
             Status string or `None` if job/pipeline step not found.
         """
         hsr = HardwareStatusRetriever(subprocess_manager)
-        return cls(status_dir)._retrieve_job_status(  # noqa: SLF001
+        return cls(status_dir)._retrieve_job_status(  # ruff:ignore[private-member-access]
             pipeline_step, job_name, hsr
         )
 

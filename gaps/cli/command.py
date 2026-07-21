@@ -370,15 +370,15 @@ class CLICommandFromFunction(AbstractBaseCLICommandConfiguration):
         )
 
 
-def CLICommandConfiguration(  # noqa: N802
+def CLICommandConfiguration(  # ruff:ignore[invalid-function-name]
     name, function, split_keys=None, config_preprocessor=None
 ):  # pragma: no cover
     """Do not use -  deprecated
 
     Please use :class:`CLICommandFromFunction`
     """
-    from warnings import warn  # noqa: PLC0415
-    from gaps.warn import gapsDeprecationWarning  # noqa: PLC0415
+    from warnings import warn  # ruff:ignore[import-outside-top-level]
+    from gaps.warn import gapsDeprecationWarning  # ruff:ignore[import-outside-top-level]
 
     warn(
         "The `CLICommandConfiguration` class is deprecated! Please use "
@@ -730,7 +730,7 @@ class _WrappedCommand(click.Command):
             width=78,
             initial_indent="",
             subsequent_indent="",
-            preserve_paragraphs=False,  # noqa: ARG001
+            preserve_paragraphs=False,  # ruff:ignore[unused-function-argument]
         ):
             """Wrap text with gaps-style newline handling"""
             wrapped_text = orig_wrap_test(

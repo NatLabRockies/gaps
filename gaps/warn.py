@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger("gaps")
 
 
-class gapsWarning(UserWarning):  # noqa: N801
+class gapsWarning(UserWarning):  # ruff:ignore[invalid-class-name]
     """Generic gaps Warning"""
 
     def __init__(self, *args, **kwargs):
@@ -15,13 +15,13 @@ class gapsWarning(UserWarning):  # noqa: N801
             logger.warning(str(args[0]), stacklevel=2)
 
 
-class gapsCollectionWarning(gapsWarning):  # noqa: N801
+class gapsCollectionWarning(gapsWarning):  # ruff:ignore[invalid-class-name]
     """gaps Collection waring"""
 
 
-class gapsHPCWarning(gapsWarning):  # noqa: N801
+class gapsHPCWarning(gapsWarning):  # ruff:ignore[invalid-class-name]
     """gaps HPC warning"""
 
 
-class gapsDeprecationWarning(gapsWarning, DeprecationWarning):  # noqa: N801
+class gapsDeprecationWarning(gapsWarning, DeprecationWarning):  # ruff:ignore[invalid-class-name]
     """gaps deprecation warning"""

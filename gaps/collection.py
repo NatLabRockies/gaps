@@ -148,7 +148,7 @@ class DatasetCollector:
                 # meta yet (len(out) == 0), e.g. when DatasetCollector
                 # is instantiated before Collector.combine_meta().
                 dataset_shape = (len(self._gids),)
-            elif axis == 2:  # noqa: PLR2004
+            elif axis == 2:  # ruff:ignore[magic-value-comparison]
                 if "time_index" in out.datasets:
                     dataset_shape = out.shape
                 else:
@@ -263,7 +263,7 @@ class DatasetCollector:
                 data = data[source_indexer]
             f_out[self._dataset_out, out_slice] = data
 
-        elif self._axis == 2:  # noqa: PLR2004
+        elif self._axis == 2:  # ruff:ignore[magic-value-comparison]
             data = f_source[self._dataset_in, :, source_slice]
             if not all(source_indexer):
                 data = data[:, source_indexer]

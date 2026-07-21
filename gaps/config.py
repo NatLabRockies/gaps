@@ -70,7 +70,7 @@ class Handler(ABC):
 
     @property
     @abstractmethod
-    def FILE_EXTENSION(self):  # noqa: N802
+    def FILE_EXTENSION(self):  # ruff:ignore[invalid-function-name]
         """str: Enum name to use"""
 
 

@@ -37,7 +37,7 @@ jobs:
       working-directory: ./reV
       shell: bash -l {0}
       run: |
-        pip install -e .
+        pip install -e .[bespoke]
     - name: Install gaps
       working-directory: ./gaps
       shell: bash -l {0}
