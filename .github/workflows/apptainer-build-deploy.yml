@@ -31,7 +31,7 @@ jobs:
     steps:
 
       - name: Check out code for the container builds
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -47,10 +47,20 @@ jobs:
     #        singularity push container.sif oras://ghcr.io/${GITHUB_REPOSITORY}:${tag}
 
       - name: Upload container to release
-        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ matrix.artifact_name }}
-          asset_name: ${{ matrix.asset_name }}
-          tag: ${{ github.ref }}
-          overwrite: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ASSET_NAME_TEMPLATE: ${{ matrix.asset_name }}
+        run: |
+          if ! command -v gh >/dev/null 2>&1; then
+            apt-get update
+            apt-get install -y gh
+          fi
+
+          tag="${GITHUB_REF_NAME}"
+          asset_name="${ASSET_NAME_TEMPLATE/\$tag/$tag}"
+
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --title "$tag" --verify-tag
+          fi
+
+          gh release upload "$tag" "${{ matrix.artifact_name }}#$asset_name" --clobber
