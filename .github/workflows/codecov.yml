@@ -13,7 +13,9 @@ on:
 jobs:
   cov:
     name: Codecov
-    environment: codecov
+    environment:
+      name: codecov
+      url: https://app.codecov.io/gh/NatLabRockies/gaps
     runs-on: ubuntu-latest
     permissions:
       contents: read

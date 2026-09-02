@@ -8,6 +8,9 @@ on:
 jobs:
   deploy:
     name: Build and upload wheels
+    environment:
+      name: pypi
+      url: https://pypi.org/p/NLR-GAPs
     permissions:
       # IMPORTANT: write permission is mandatory for Trusted Publishing
       id-token: write
