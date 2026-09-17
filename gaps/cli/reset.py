@@ -37,7 +37,9 @@ def _reset_status(ctx, directory, force=False, after_step=None):
         status = Status(status_dir)
         is_processing = (
             status.as_df()
-            .job_status.isin({StatusOption.SUBMITTED, StatusOption.RUNNING})
+            .job_status.isin(
+                {StatusOption.SUBMITTED.value, StatusOption.RUNNING.value}
+            )
             .any()
         )
         if is_processing and not force:
