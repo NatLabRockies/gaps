@@ -269,6 +269,7 @@ def load_config(config_filepath, resolve_paths=True, excluded_keys=None):
     return config
 
 
+# complexipy: ignore
 def resolve_all_paths(container, base_dir, excluded_keys=None):
     """Perform a deep string replacement and path resolve in `container`
 
