@@ -137,6 +137,18 @@ def test_resolve_all_paths_dict():
     assert resolve_all_paths(input_, base_dir) == expected_output
 
 
+def test_resolve_all_paths_excluded_keys():
+    """Test excluding dictionary values from path resolution."""
+    base_dir = Path.home()
+    command = "./my_script.py -o ./my_out_dir"
+    input_ = {"cmd": command, "path": "./data.csv"}
+
+    resolved = resolve_all_paths(input_, base_dir, excluded_keys={"cmd"})
+
+    assert resolved["cmd"] == command
+    assert resolved["path"] == (base_dir / "data.csv").as_posix()
+
+
 @pytest.mark.parametrize("config_type", list(ConfigType))
 def test_write_load_config(tmp_path, config_type):
     """Test loading a configuration file."""
@@ -144,7 +156,7 @@ def test_write_load_config(tmp_path, config_type):
     base_fn = f"test.{config_type}"
 
     test_dictionary = {"a": 1, "b": 2}
-    with open(tmp_path / base_fn, "w") as config_file:
+    with Path(tmp_path / base_fn).open("w", encoding="utf-8") as config_file:
         config_type.dump(test_dictionary, config_file)
 
     assert load_config(tmp_path / "." / base_fn) == test_dictionary
