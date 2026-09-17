@@ -1,6 +1,7 @@
 """Main CLI entry points"""
 
 from functools import partial
+from collections import Counter
 
 import click
 
@@ -22,6 +23,7 @@ from gaps.cli.preprocessing import (
     preprocess_script_config,
 )
 from gaps.cli.status import status_command
+from gaps.exceptions import gapsValueError
 from gaps.log import cleanup_logger
 
 
@@ -63,6 +65,23 @@ class _CLICommandGenerator:
                 )
                 all_commands.append(collect_configuration)
         self.command_configs = all_commands
+        return self
+
+    def check_for_duplicate_command_names(self):
+        """Check for duplicate command names"""
+        command_name_counts = Counter(
+            command_config.name for command_config in self.command_configs
+        )
+        duplicates = [
+            name for name, count in command_name_counts.items() if count > 1
+        ]
+        if duplicates:
+            msg = (
+                "No duplicate command names allowed: "
+                f"{', '.join(repr(name) for name in sorted(duplicates))}"
+            )
+            raise gapsValueError(msg)
+
         return self
 
     def add_script_command(self):
@@ -118,6 +137,7 @@ class _CLICommandGenerator:
         """Generate a list of click commands from input configs"""
         return (
             self.add_collect_command_configs()
+            .check_for_duplicate_command_names()
             .add_script_command()
             .convert_to_commands()
             .add_pipeline_command()
