@@ -26,8 +26,9 @@ def test_script_cli_help(cli_runner):
     result = cli_runner.invoke(main, ["script", "--help"])
 
     assert result.exit_code == 0
-    assert "paths embedded in `cmd` are not resolved" in result.output
-    assert "relative to the command's working directory" in result.output
+    help_text = " ".join(result.output.split())
+    assert "paths embedded in `cmd` are not resolved" in help_text
+    assert "relative to the command's working directory" in help_text
 
 
 def test_script_cli(tmp_path, cli_runner, runnable_script):
