@@ -151,6 +151,13 @@ logging : dict, optional
 BATCH_CONFIG_DOC = """
 Path to the ``batch`` configuration file. {sample_config}
 
+Batch configurations may be JSON or CSV. A JSON config defines sets of values
+whose combinations become jobs. In a CSV config, each row defines exactly one
+job and must provide a unique ``set_tag``, a ``pipeline_config`` path, and a
+JSON-like list of configuration ``files`` to modify. All other column names
+are treated as configuration keys, and their row values replace matching keys
+in the listed files. Paths are resolved relative to the batch config file.
+
 Parameters
 ----------
 logging : dict, optional
