@@ -337,15 +337,7 @@ def _check_sets(config, base_dir):
 
     batch_sets = []
     for batch_set in config["sets"]:
-        if not isinstance(batch_set, dict):
-            msg = "Batch sets must be dictionaries."
-            raise gapsConfigError(msg)
-        if "args" not in batch_set:
-            msg = 'All batch sets must have "args" key.'
-            raise gapsConfigError(msg)
-        if "files" not in batch_set:
-            msg = 'All batch sets must have "files" key.'
-            raise gapsConfigError(msg)
+        _confirm_required_batch_set_structure(batch_set)
         batch_set["files"] = resolve_all_paths(batch_set["files"], base_dir)
         for fpath in batch_set["files"]:
             if not Path(fpath).exists():
@@ -355,6 +347,19 @@ def _check_sets(config, base_dir):
 
     config["sets"] = batch_sets
     return config
+
+
+def _confirm_required_batch_set_structure(batch_set):
+    """Confirm that a batch set has the required structure"""
+    if not isinstance(batch_set, dict):
+        msg = "Batch sets must be dictionaries."
+        raise gapsConfigError(msg)
+    if "args" not in batch_set:
+        msg = 'All batch sets must have "args" key.'
+        raise gapsConfigError(msg)
+    if "files" not in batch_set:
+        msg = 'All batch sets must have "files" key.'
+        raise gapsConfigError(msg)
 
 
 def _enumerated_product(args):
