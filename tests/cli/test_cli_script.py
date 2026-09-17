@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
-# pylint: disable=unused-argument
-"""
-GAPs script command tests.
-"""
+"""GAPs script command tests"""
+
 import json
 from pathlib import Path
 
@@ -36,16 +33,15 @@ def test_script_cli(tmp_path, cli_runner, runnable_script):
         "logging": {"log_file": None, "log_level": "INFO"},
     }
 
-    script_config = {"cmd": "python test.py"}
+    script_config = {"cmd": "python test.py -o ./my_out_dir"}
 
-    with open(pipe_config_fp, "w") as config_file:
+    with Path(pipe_config_fp).open("w", encoding="utf-8") as config_file:
         json.dump(pipe_config, config_file)
 
-    with open(script_config_fp, "w") as config_file:
+    with Path(script_config_fp).open("w", encoding="utf-8") as config_file:
         json.dump(script_config, config_file)
 
-    with open(script_fp, "w") as script_file:
-        script_file.write(SAMPLE_SCRIPT)
+    Path(script_fp).write_text(SAMPLE_SCRIPT, encoding="utf-8")
 
     assert "test_out.csv" not in {f.name for f in tmp_path.glob("*")}
     assert tmp_path / "logs" not in set(tmp_path.glob("*"))
