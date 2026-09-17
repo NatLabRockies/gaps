@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-"""
-GAPs reset status command tests.
-"""
+"""GAPs reset status command tests"""
+
 from pathlib import Path
 from copy import deepcopy
 
