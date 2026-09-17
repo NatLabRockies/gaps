@@ -64,11 +64,12 @@ def preprocess_script_config(config, cmd):
         This will run the python file "my_script.py" (in the project
         directory) on a single node.
 
-        .. Important:: It is inefficient to run scripts that only use a
-           single processor on HPC nodes for extended periods of time.
-           Always make sure your long-running scripts use Python's
-           multiprocessing library wherever possible to make the most
-           use of shared HPC resources.
+        .. WARNING:: Unlike paths in other configuration values, paths
+           embedded in ``cmd`` are not resolved relative to the config
+           file. The command is passed through unchanged, so
+           ``./my_script.py`` is interpreted relative to the command's
+           working directory.
+
 
         To run multiple commands in parallel, supply them as a list:
         ::
@@ -83,6 +84,13 @@ def preprocess_script_config(config, cmd):
         from the web), each on their own node and in parallel as part of
         this pipeline step. Note that commands are always executed from
         the project directory.
+
+        .. Important:: It is inefficient to run scripts that only use a
+           single processor on HPC nodes for extended periods of time.
+           Always make sure your long-running scripts use Python's
+           multiprocessing library wherever possible to make the most
+           use of shared HPC resources.
+
 
     Returns
     -------
