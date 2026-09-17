@@ -70,15 +70,15 @@ def _filter_df_for_status(df, status_request):
     for request in status_request:
         request = request.lower()  # ruff:ignore[redefined-loop-name]
         if request in FAILURE_STRINGS:
-            filter_statuses |= {StatusOption.FAILED}
+            filter_statuses |= {StatusOption.FAILED.value}
         elif request in SUCCESS_STRINGS:
-            filter_statuses |= {StatusOption.SUCCESSFUL}
+            filter_statuses |= {StatusOption.SUCCESSFUL.value}
         elif request in RUNNING_STRINGS:
-            filter_statuses |= {StatusOption.RUNNING}
+            filter_statuses |= {StatusOption.RUNNING.value}
         elif request in SUBMITTED_STRINGS:
-            filter_statuses |= {StatusOption.SUBMITTED}
+            filter_statuses |= {StatusOption.SUBMITTED.value}
         elif request in NOT_SUBMITTED_STRINGS:
-            filter_statuses |= {StatusOption.NOT_SUBMITTED}
+            filter_statuses |= {StatusOption.NOT_SUBMITTED.value}
         else:
             msg = (
                 f"Requested status not recognized: {status_request!r}. "
@@ -114,7 +114,9 @@ def _calculate_runtime_stats(df):
 
 def _calculate_walltime(df):
     """Calculate total project walltime"""
-    all_jobs_failed = (df[StatusField.JOB_STATUS] == StatusOption.FAILED).all()
+    all_jobs_failed = (
+        df[StatusField.JOB_STATUS] == StatusOption.FAILED.value
+    ).all()
     all_end_times_missing = df[StatusField.TIME_END].isna().all()
     if all_jobs_failed and all_end_times_missing:
         return 0
@@ -149,11 +151,11 @@ def _calculate_aus(df):
 
 def _color_string(string):
     """Color string value based on status option"""
-    if string == StatusOption.FAILED:
+    if string == StatusOption.FAILED.value:
         string = f"{Fore.RED}{string}{Style.RESET_ALL}"
-    elif string == StatusOption.SUCCESSFUL:
+    elif string == StatusOption.SUCCESSFUL.value:
         string = f"{Fore.GREEN}{string}{Style.RESET_ALL}"
-    elif string == StatusOption.RUNNING:
+    elif string == StatusOption.RUNNING.value:
         string = f"{Fore.BLUE}{string}{Style.RESET_ALL}"
     else:
         string = f"{Fore.YELLOW}{string}{Style.RESET_ALL}"
