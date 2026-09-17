@@ -485,7 +485,7 @@ class Status(UserDict):
         for status in self.values():
             try:
                 yield from _iter_job_status(status)
-            except AttributeError:  # ruff:ignore[try-except-in-loop]
+            except AttributeError:
                 continue
 
     @staticmethod
