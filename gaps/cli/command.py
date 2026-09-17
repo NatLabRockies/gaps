@@ -456,7 +456,7 @@ class CLICommandFromClass(AbstractBaseCLICommandConfiguration):
             the ``tag`` argument. This method can "request" the
             following arguments by including them in the method
             signature (``gaps`` will automatically pass them to the
-            method without any additional used input):
+            method without any additional user input):
 
                 tag : str
                     Short string unique to this job run that can be used
