@@ -64,7 +64,7 @@ def preprocess_script_config(config, cmd):
         This will run the python file "my_script.py" (in the project
         directory) on a single node.
 
-        .. Warning:: Unlike paths in other configuration values, paths
+        .. WARNING:: Unlike paths in other configuration values, paths
            embedded in ``cmd`` are not resolved relative to the config
            file. The command is passed through unchanged, so
            ``./my_script.py`` is interpreted relative to the command's
