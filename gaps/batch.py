@@ -376,19 +376,7 @@ def _parse_config(config):
     for batch_set in config["sets"]:
         set_tag = batch_set.get("set_tag", "")
         args = batch_set["args"]
-
-        if set_tag in sets:
-            msg = f"Found multiple sets with the same set_tag: {set_tag!r}"
-            raise gapsValueError(msg)
-
-        for key, value in args.items():
-            if isinstance(value, str):
-                msg = (
-                    "Batch arguments should be lists but found "
-                    f"{key!r}: {value!r}"
-                )
-                raise gapsValueError(msg)
-
+        _validate_batch_set(set_tag, args, sets)
         sets.add(set_tag)
 
         products = _enumerated_product(args.values())
@@ -399,12 +387,7 @@ def _parse_config(config):
             num_batch_jobs,
             set_str,
         )
-        if num_batch_jobs > _TOO_MANY_JOBS_WARNING_THRESH:
-            msg = (
-                f"Large number of batch jobs found: {num_batch_jobs:,}! "
-                "Proceeding, but consider double checking your config."
-            )
-            warn(msg, gapsWarning)
+        _warn_if_too_many_jobs(num_batch_jobs)
 
         for inds, comb in products:
             arg_combo = dict(zip(args, comb))
@@ -418,6 +401,30 @@ def _parse_config(config):
             )
 
     return batch_sets
+
+
+def _validate_batch_set(set_tag, args, sets):
+    """Validate a batch set's tag and arguments"""
+    if set_tag in sets:
+        msg = f"Found multiple sets with the same set_tag: {set_tag!r}"
+        raise gapsValueError(msg)
+
+    for key, value in args.items():
+        if isinstance(value, str):
+            msg = (
+                f"Batch arguments should be lists but found {key!r}: {value!r}"
+            )
+            raise gapsValueError(msg)
+
+
+def _warn_if_too_many_jobs(num_batch_jobs):
+    """Warn if the number of batch jobs exceeds the threshold"""
+    if num_batch_jobs > _TOO_MANY_JOBS_WARNING_THRESH:
+        msg = (
+            f"Large number of batch jobs found: {num_batch_jobs:,}! "
+            "Proceeding, but consider double checking your config."
+        )
+        warn(msg, gapsWarning)
 
 
 def _make_job_tag(set_tag, arg_comb, arg_inds):
@@ -461,6 +468,7 @@ def _mod_file(fpath_in, fpath_out, arg_mods):
     config_type.write(fpath_out, _mod_dict(config, arg_mods))
 
 
+# complexipy: ignore
 def _mod_dict(inp, arg_mods):
     """Recursively modify key/value pairs in a dictionary"""
 
