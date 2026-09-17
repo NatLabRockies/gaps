@@ -948,9 +948,24 @@ def _add_elapsed_time(status_df):
 
 def _add_time_cols_if_needed(status_df):
     """Adds any missing time cols to avoid pandas 2.0 warnings"""
-    for col in [StatusField.RUNTIME_SECONDS, StatusField.TOTAL_RUNTIME]:
-        if col not in status_df:
-            status_df[col] = None
+    if StatusField.RUNTIME_SECONDS not in status_df:
+        status_df[StatusField.RUNTIME_SECONDS] = pd.Series(
+            pd.NA, index=status_df.index, dtype="Float64"
+        )
+    else:
+        status_df[StatusField.RUNTIME_SECONDS] = status_df[
+            StatusField.RUNTIME_SECONDS
+        ].astype("Float64")
+
+    if StatusField.TOTAL_RUNTIME not in status_df:
+        status_df[StatusField.TOTAL_RUNTIME] = pd.Series(
+            pd.NA, index=status_df.index, dtype="string"
+        )
+    else:
+        status_df[StatusField.TOTAL_RUNTIME] = status_df[
+            StatusField.TOTAL_RUNTIME
+        ].astype("string")
+
     return status_df
 
 
