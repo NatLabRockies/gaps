@@ -357,10 +357,9 @@ class Status(UserDict):
             if field not in step_df.columns:
                 step_df[f"{field}"] = np.nan
 
-        step_df.loc[
-            step_df[StatusField.JOB_STATUS].isna(),
-            StatusField.JOB_STATUS.value,
-        ] = StatusOption.NOT_SUBMITTED.value
+        step_df[StatusField.JOB_STATUS] = step_df[
+            StatusField.JOB_STATUS
+        ].fillna(StatusOption.NOT_SUBMITTED.value)
 
         step_df = _add_elapsed_time(step_df)
 
