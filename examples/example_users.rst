@@ -955,9 +955,25 @@ CSV file like so:
 
 
 Notice how we have included the ``set_tag``, ``pipeline_config``, and ``files`` columns. This is because this
-CSV file doubles as the batch config file! In other words, once you set up the CSV file with the parameter
-combination you want to model, you can pass this file directly to ``batch`` and let it do all the work for you!
-Let's try running the command to see what we get:
+CSV file doubles as the batch config file. The columns have the following meanings:
+
+    - ``set_tag`` is required and must be unique in every row. It becomes the name of that run's
+        sub-directory.
+    - ``pipeline_config`` is required and identifies the pipeline configuration to copy and execute.
+        Use the same value in every row; GAPs uses the value from the first row for the batch. Relative
+        paths are resolved from the directory containing the CSV file.
+    - ``files`` is required and contains a list of the JSON or YAML configuration files in which the
+        row's parameters should be replaced. The list may differ by row, and relative paths are resolved
+        from the directory containing the CSV file.
+    - Every other column is a parameter. Its column heading must match a key in one of the files listed
+        by ``files``, and its value in a given row is written to every matching key found recursively in
+        those files for that run.
+
+Thus, the first row in the table creates a directory named ``T1``, copies the batch project into it,
+and sets ``wind_turbine_hub_ht`` to ``110`` and ``wind_turbine_rotor_diameter`` to ``145`` in
+``turbine.json``. The second row independently creates ``T2`` with values ``115`` and ``150``, and so
+on. Once you set up the CSV file with the parameter combinations you want to model, you can pass the
+file directly to ``batch``:
 
 .. code-block::
     shell
