@@ -168,7 +168,9 @@ def preprocess_collect_config(
         )
         for out_path, pattern in files.items()
     ]
-    config["_out_path"], config["_pattern"] = zip(*_validate_patterns(files))
+    config["_out_path"], config["_pattern"] = zip(
+        *_validate_patterns(files), strict=False
+    )
     return config
 
 
