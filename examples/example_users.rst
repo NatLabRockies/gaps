@@ -983,15 +983,16 @@ file directly to ``batch``:
     batch_jobs.csv  config_gen.json  config_pipeline.json  parameters.csv  T1  T2  T3  T4  T5  T6  T7  T8  turbine.json
 
 
-Note that the sub-directory names are now uniquely defined by the ``set_tag`` column.
-As before, we can validate that the setup worked as intended and kickoff the model runs by leaving off the ``--dry``
-flag.
+The sub-directory names are defined by the ``set_tag`` column. As before, we can validate that the setup
+worked as intended and kick off the model runs by leaving off the ``--dry`` flag.
 
-One important caveat for the CSV batch input is that any JSON-like objects (e.g. lists, dicts, etc), *must* be
-enclosed in double quotes (``"``). This means that any strings within those objects *must* be enclosed in
-single quotes. You can see this use pattern in the ``files`` column in the table above. Although this can be
-tricky to get used to at first, this does allow you to use ``batch`` to parametrize more complicated inputs
-like dictionaries (e.g. ``"{'dset': 'big_brown_bat', 'method': 'sum', 'value': 0}"``).
+CSV readers infer unquoted scalar values such as numbers and strings in the usual way. To use a list,
+dictionary, or other JSON-like value, enclose the entire field in double quotes (``"``) so that commas do
+not split it into multiple CSV columns, and enclose strings inside the object in single quotes. You can see
+this pattern in the ``files`` column above. GAPs parses these fields before writing them to the target config,
+which also allows parameters to contain structured values such as
+``"{'dset': 'big_brown_bat', 'method': 'sum', 'value': 0}"``. A field that cannot be parsed as a JSON-like
+value is retained as a string.
 
 
 .. Note:: For more about ``batch``, see the `reVX setbacks batched execution example <https://github.com/NatLabRockies/reVX/tree/main/reVX/setbacks#batched-execution>`_, which is powered by GAPs.
