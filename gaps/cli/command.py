@@ -118,7 +118,7 @@ class CLICommandFromFunction(AbstractBaseCLICommandConfiguration):
             sure to "request" the ``tag`` argument. This function can
             "request" the following arguments by including them in the
             function signature (``gaps`` will automatically pass them to
-            the function without any additional used input):
+            the function without any additional user input):
 
                 tag : str
                     Short string unique to this job run that can be used
