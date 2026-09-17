@@ -95,6 +95,18 @@ class BatchJob:
         logger.debug("Using the following batch sets: %s", self._sets)
         logger.info("Preparing batch job directories...")
 
+        self._prepare_batch_sub_directories()
+        self._copy_pipeline_files()
+
+        logger.info("Batch job directories ready for execution.")
+
+    def _prepare_batch_sub_directories(self):
+        """Create all batch job sub-directories"""
+        for source_dir, filenames in self._files_to_copy():
+            self._prepare_batch_set_sub_directories(source_dir, filenames)
+
+    def _files_to_copy(self):
+        """Get all source files/directories to copy"""
         # walk through current directory getting everything to copy
         for source_dir, _, filenames in os.walk(self._base_dir):
             logger.debug("Processing files in : %s", source_dir)
@@ -107,30 +119,33 @@ class BatchJob:
             if any(job_tag in source_dir for job_tag in self._sets):
                 continue
 
-            # For each dir level, iterate through the batch arg combos
-            for tag, (arg_comb, mod_files, __) in self._sets.items():
-                mod_files = {Path(fp) for fp in mod_files}  # ruff:ignore[redefined-loop-name]
-                # Add the job tag to the directory path.
-                # This will copy config subdirs into the job subdirs
-                source_dir = Path(source_dir)  # ruff:ignore[redefined-loop-name]
-                destination_dir = (
-                    self._base_dir
-                    / tag
-                    / source_dir.relative_to(self._base_dir)
+            yield Path(source_dir), filenames
+
+    def _prepare_batch_set_sub_directories(self, source_dir, filenames):
+        """Prepare all batch set sub-directories"""
+        # For each dir level, iterate through the batch arg combos
+        for tag, (arg_comb, mod_files, __) in self._sets.items():
+            # This will copy config subdirs into the job subdirs
+            destination_dir = self._prepare_batch_set_destination_dir(
+                tag, source_dir
+            )
+            for name in filenames:
+                _copy_maybe_modified_file(
+                    name, source_dir, destination_dir, mod_files, arg_comb
                 )
-                logger.debug("Creating dir: %s", destination_dir)
-                destination_dir.mkdir(parents=True, exist_ok=True)
 
-                for name in filenames:
-                    if BATCH_CSV_FN in name:
-                        continue
-                    fp_source = source_dir / name
-                    fp_target = destination_dir / name
-                    if fp_source in mod_files:
-                        _mod_file(fp_source, fp_target, arg_comb)
-                    else:
-                        _copy_batch_file(fp_source, destination_dir / name)
+    def _prepare_batch_set_destination_dir(self, tag, source_dir):
+        """Prepare a single batch set sub-directory"""
+        # Add the job tag to the directory path.
+        destination_dir = (
+            self._base_dir / tag / source_dir.relative_to(self._base_dir)
+        )
+        logger.debug("Creating dir: %s", destination_dir)
+        destination_dir.mkdir(parents=True, exist_ok=True)
+        return destination_dir
 
+    def _copy_pipeline_files(self):
+        """Copy pipeline file to all of the batch job sub-directories"""
         for tag in self._sets:
             destination_dir = self._base_dir / tag
             pipeline_file_target = (
@@ -142,8 +157,6 @@ class BatchJob:
                 destination_dir
                 / self._pipeline_fp.relative_to(self._base_dir),
             )
-
-        logger.info("Batch job directories ready for execution.")
 
     def _run_pipelines(self, monitor_background=False):
         """Run the pipeline modules for each batch job"""
@@ -458,6 +471,22 @@ def _format_value(value):
     return value
 
 
+def _copy_maybe_modified_file(
+    filename, source_dir, destination_dir, mod_files, arg_comb
+):
+    """Copy a file to the batch job directory, modifying it if needed"""
+    if BATCH_CSV_FN in filename:
+        return
+
+    mod_files = {Path(fp) for fp in mod_files}
+    fp_source = source_dir / filename
+    fp_target = destination_dir / filename
+    if fp_source in mod_files:
+        _mod_file(fp_source, fp_target, arg_comb)
+    else:
+        _copy_batch_file(fp_source, destination_dir / filename)
+
+
 def _mod_file(fpath_in, fpath_out, arg_mods):
     """Import and modify the contents of a json. Dump to new file"""
     logger.debug(
@@ -518,6 +547,7 @@ def _source_needs_copying(fp_source, fp_target):
 
 
 def _json_load_with_cleaning(input_str):
+    """Load a JSON string; handling common formatting issues"""
     return json.loads(
         input_str.replace("'", '"')
         .removesuffix('"""')
