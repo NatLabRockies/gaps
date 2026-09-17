@@ -70,10 +70,23 @@ def kickoff_job(ctx, cmd, exec_kwargs):
 def _filter_exec_kwargs(kwargs, func, hardware_option):
     """Filter out extra keywords and raise error if any are missing"""
     sig = signature(func)
+    kwargs_to_use = _kwargs_for_function(kwargs, sig, hardware_option)
+    _warn_about_extra_keys(kwargs, kwargs_to_use)
+    _fail_if_missing_required_keys(sig, kwargs_to_use)
+    _handle_categorical_qos(hardware_option, kwargs_to_use)
+    return kwargs_to_use
+
+
+def _kwargs_for_function(kwargs, sig, hardware_option):
+    """Get kwargs that are valid for the given function signature"""
     kwargs_to_use = {k: v for k, v in kwargs.items() if k in sig.parameters}
     if "keep_sh" in kwargs and hardware_option != HardwareOption.LOCAL:
         kwargs_to_use["keep_sh"] = kwargs["keep_sh"]
+    return kwargs_to_use
 
+
+def _warn_about_extra_keys(kwargs, kwargs_to_use):
+    """Warn about extra keys in the execution control block"""
     extra_keys = set(kwargs) - set(kwargs_to_use)
     if extra_keys:
         msg = (
@@ -83,11 +96,14 @@ def _filter_exec_kwargs(kwargs, func, hardware_option):
         )
         warn(msg, gapsWarning)
 
+
+def _fail_if_missing_required_keys(sig, kwargs):
+    """Fail if any required kwargs are missing"""
     required = {
         name for name, p in sig.parameters.items() if p.default == p.empty
     }
     required -= {"self", "cmd", "name"}
-    missing = {k for k in required if k not in kwargs_to_use}
+    missing = {k for k in required if k not in kwargs}
     if missing:
         msg = (
             f"The 'execution_control' block is missing the following "
@@ -95,21 +111,24 @@ def _filter_exec_kwargs(kwargs, func, hardware_option):
         )
         raise gapsConfigError(msg)
 
-    if hardware_option.supports_categorical_qos:
-        qos = kwargs_to_use.get("qos", "normal")
-        try:
-            qos = QOSOption(qos)
-        except ValueError as err:
-            msg = (
-                f"Requested Quality-of-service option ({qos!r}) not "
-                f"recognized! Available options are: "
-                f"{QOSOption.members_as_str()}."
-            )
-            raise gapsConfigError(msg) from err
 
-        kwargs_to_use["qos"] = f"{qos}"
+def _handle_categorical_qos(hardware_option, kwargs):
+    """Maybe set the categorical qos option in the kwargs"""
+    if not hardware_option.supports_categorical_qos:
+        return
 
-    return kwargs_to_use
+    qos = kwargs.get("qos", "normal")
+    try:
+        qos = QOSOption(qos)
+    except ValueError as err:
+        msg = (
+            f"Requested Quality-of-service option ({qos!r}) not "
+            f"recognized! Available options are: "
+            f"{QOSOption.members_as_str()}."
+        )
+        raise gapsConfigError(msg) from err
+
+    kwargs["qos"] = f"{qos}"
 
 
 def _kickoff_local_job(ctx, cmd):
