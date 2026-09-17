@@ -913,8 +913,11 @@ CSV Batch Config
 ^^^^^^^^^^^^^^^^
 If we want to model many unique combinations of parameters with ``batch``, the setup of individual sets
 can become cumbersome (and barely more efficient than writing a script to perform the setup by hand).
-Luckily, ``batch`` allows you to intuitively and efficiently setup many parameter combinations with
-a simple CSV input.
+Luckily, ``batch`` allows you to intuitively and efficiently set up many parameter combinations with
+a simple CSV input. Unlike a JSON batch config, which produces every permutation of the values within
+each set, a CSV batch config creates exactly one run for each row. Values in different rows are never
+permuted with one another, so the CSV format is useful when every desired parameter combination is
+already known.
 
 Let's take the example from the previous section, but add a few more turbine combinations to the mix:
 
