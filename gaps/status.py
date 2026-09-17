@@ -929,17 +929,21 @@ def _add_elapsed_time(status_df):
     has_start_time = ~status_df[StatusField.TIME_START].isna()
     has_no_end_time = status_df[StatusField.TIME_END].isna()
     has_not_failed = status_df[StatusField.JOB_STATUS] != StatusOption.FAILED
-    mask = has_start_time & (has_no_end_time & has_not_failed)
+    still_running_mask = has_start_time & (has_no_end_time & has_not_failed)
 
     status_df = _add_time_cols_if_needed(status_df)
-    start_times = status_df.loc[mask, StatusField.TIME_START]
+    start_times = status_df.loc[still_running_mask, StatusField.TIME_START]
     start_times = pd.to_datetime(start_times, format=DT_FMT)
     elapsed_times = dt.datetime.now() - start_times
     elapsed_times = elapsed_times.apply(lambda dt: dt.total_seconds())
-    status_df.loc[mask, StatusField.RUNTIME_SECONDS] = elapsed_times
+    status_df.loc[still_running_mask, StatusField.RUNTIME_SECONDS] = (
+        elapsed_times
+    )
     elapsed_times = elapsed_times.apply(_elapsed_time_as_str)
     elapsed_times = elapsed_times.apply(lambda time_str: f"{time_str} (r)")
-    status_df.loc[mask, StatusField.TOTAL_RUNTIME] = elapsed_times
+    status_df.loc[still_running_mask, StatusField.TOTAL_RUNTIME] = (
+        elapsed_times
+    )
     return status_df
 
 
