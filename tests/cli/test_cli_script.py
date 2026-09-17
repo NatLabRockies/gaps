@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
-# pylint: disable=unused-argument
-"""
-GAPs script command tests.
-"""
+"""GAPs script command tests"""
+
 import json
 from pathlib import Path
 
@@ -22,6 +19,18 @@ def run_func():
     """Test run function"""
 
 
+def test_script_cli_help(cli_runner):
+    """Test that script help explains command path handling."""
+    main = make_cli([CLICommandFromFunction(run_func, add_collect=False)])
+
+    result = cli_runner.invoke(main, ["script", "--help"])
+
+    assert result.exit_code == 0
+    help_text = " ".join(result.output.split())
+    assert "paths embedded in `cmd` are not resolved" in help_text
+    assert "relative to the command's working directory" in help_text
+
+
 def test_script_cli(tmp_path, cli_runner, runnable_script):
     """Test the script command basic execution."""
 
@@ -36,16 +45,15 @@ def test_script_cli(tmp_path, cli_runner, runnable_script):
         "logging": {"log_file": None, "log_level": "INFO"},
     }
 
-    script_config = {"cmd": "python test.py"}
+    script_config = {"cmd": "python test.py -o ./my_out_dir"}
 
-    with open(pipe_config_fp, "w") as config_file:
+    with Path(pipe_config_fp).open("w", encoding="utf-8") as config_file:
         json.dump(pipe_config, config_file)
 
-    with open(script_config_fp, "w") as config_file:
+    with Path(script_config_fp).open("w", encoding="utf-8") as config_file:
         json.dump(script_config, config_file)
 
-    with open(script_fp, "w") as script_file:
-        script_file.write(SAMPLE_SCRIPT)
+    Path(script_fp).write_text(SAMPLE_SCRIPT, encoding="utf-8")
 
     assert "test_out.csv" not in {f.name for f in tmp_path.glob("*")}
     assert tmp_path / "logs" not in set(tmp_path.glob("*"))

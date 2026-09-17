@@ -224,7 +224,7 @@ def config_as_str_for_docstring(
     return config_type.dumps(config).replace("\n", newline_str)
 
 
-def load_config(config_filepath, resolve_paths=True):
+def load_config(config_filepath, resolve_paths=True, excluded_keys=None):
     """Load a config file
 
     Parameters
@@ -235,6 +235,9 @@ def load_config(config_filepath, resolve_paths=True):
         Option to (recursively) resolve file-paths in the dictionary
         w.r.t the config file directory.
         By default, ``True``.
+    excluded_keys : collection of str, optional
+        Dictionary keys whose values should not be resolved as paths.
+        By default, ``None``.
 
     Returns
     -------
@@ -246,6 +249,7 @@ def load_config(config_filepath, resolve_paths=True):
     gapsValueError
         If input `config_filepath` has no file ending.
     """
+
     # TODO: maybe also have a "required keys" argument
     config_filepath = Path(config_filepath).expanduser().resolve()
     if "." not in config_filepath.name:
@@ -254,15 +258,19 @@ def load_config(config_filepath, resolve_paths=True):
             f"{config_filepath.name}"
         )
         raise gapsValueError(msg)
+
     config_type = ConfigType(config_filepath.name.split(".")[-1])
     config = config_type.load(config_filepath)
     if resolve_paths:
-        return resolve_all_paths(config, config_filepath.parent)
+        return resolve_all_paths(
+            config, config_filepath.parent, excluded_keys=excluded_keys
+        )
 
     return config
 
 
-def resolve_all_paths(container, base_dir):
+# complexipy: ignore
+def resolve_all_paths(container, base_dir, excluded_keys=None):
     """Perform a deep string replacement and path resolve in `container`
 
     Parameters
@@ -273,12 +281,17 @@ def resolve_all_paths(container, base_dir):
     base_dir : path-like
         Base path to directory from which to resolve path string
         (typically current directory)
+    excluded_keys : collection of str, optional
+        Dictionary keys whose values should not be resolved as paths.
+        By default, ``None``.
 
     Returns
     -------
     container
         Input container with updated strings.
     """
+
+    excluded_keys = set(excluded_keys or ())
 
     if isinstance(container, str):
         # `resolve_path` is safe to call on any string,
@@ -287,13 +300,22 @@ def resolve_all_paths(container, base_dir):
 
     elif isinstance(container, collections.abc.Mapping):
         container = {
-            key: resolve_all_paths(val, Path(base_dir))
+            key: (
+                val
+                if key in excluded_keys
+                else resolve_all_paths(
+                    val, Path(base_dir), excluded_keys=excluded_keys
+                )
+            )
             for key, val in container.items()
         }
 
     elif isinstance(container, collections.abc.Sequence):
         container = [
-            resolve_all_paths(item, Path(base_dir)) for item in container
+            resolve_all_paths(
+                item, Path(base_dir), excluded_keys=excluded_keys
+            )
+            for item in container
         ]
 
     return container

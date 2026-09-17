@@ -80,7 +80,7 @@ class _FromConfig:
         self.ctx = ctx
         self.config_file = Path(config_file).expanduser().resolve()
         self.command_config = command_config
-        self.config = load_config(config_file)
+        self.config = load_config(config_file, excluded_keys={"cmd"})
         self.log_directory = None
         self.verbose = None
         self.exec_kwargs = None
