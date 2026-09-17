@@ -19,6 +19,7 @@ from gaps.cli import CLICommandFromFunction, make_cli
 from gaps.cli.documentation import CommandDocumentation
 from gaps.cli.pipeline import _can_run_background
 from gaps.utilities import TAG
+from gaps.exceptions import gapsValueError
 
 
 PROJECT_POINTS = [0, 1, 2]
@@ -160,6 +161,19 @@ def test_make_cli():
     assert "$ test analyze --help" in main.help
     assert "$ test collect-analyze --help" in main.help
     assert "$ test collect-run --help" not in main.help
+
+
+def test_make_cli_duplicate_command_names():
+    """Test that `make_cli` rejects duplicate command names."""
+    commands = [
+        CLICommandFromFunction(_copy_files, name="run"),
+        CLICommandFromFunction(_copy_files, name="run"),
+    ]
+
+    with pytest.raises(
+        gapsValueError, match="No duplicate command names allowed: 'run'"
+    ):
+        make_cli(commands)
 
 
 def test_cleanup_group_invoke_runs_cleanup_on_error(monkeypatch):
