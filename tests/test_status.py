@@ -576,7 +576,7 @@ def test_status_as_df(tmp_path):
     assert not status_df[StatusField.JOB_STATUS].isna().any()
 
     assert (
-        status_df[StatusField.JOB_STATUS] == StatusOption.NOT_SUBMITTED
+        status_df[StatusField.JOB_STATUS] == StatusOption.NOT_SUBMITTED.value
     ).all()
 
     status_df = Status(tmp_path).as_df(pipe_steps=["DNE"])
