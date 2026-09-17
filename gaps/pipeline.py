@@ -197,52 +197,21 @@ class Pipeline:
 
         return self._get_step_return_code(status, pipe_step.name)
 
-    def _get_step_return_code(self, status, step_name):  # ruff:ignore[complex-structure]
+    def _get_step_return_code(self, status, step_name):
         """Get a return code for a pipeline step based on status object
 
         Note that it is assumed a job has been submitted before this
         function is called, otherwise the return values make no sense!
         """
-
-        # initialize return code array
-        arr = []
-        check_failed = False
         status.update_from_all_job_files(check_hardware=True)
 
-        if step_name not in status.data:
-            # assume running
-            arr = [StatusOption.RUNNING]
-        else:
-            for job_name, job_info in status.data[step_name].items():
-                if job_name == StatusField.PIPELINE_INDEX:
-                    continue
-
-                job_status = job_info.get(StatusField.JOB_STATUS)
-
-                if job_status == "successful":
-                    arr.append(StatusOption.SUCCESSFUL)
-                elif job_status == "failed":
-                    arr.append(StatusOption.FAILED)
-                    check_failed = True
-                elif job_status == "submitted":
-                    arr.append(StatusOption.SUBMITTED)
-                elif job_status == "not submitted":
-                    arr.append(StatusOption.NOT_SUBMITTED)
-                elif job_status == "running":
-                    arr.append(StatusOption.RUNNING)
-                elif job_status is None:
-                    arr.append(StatusOption.COMPLETE)
-                else:
-                    msg = f"Job status code {job_status!r} not understood!"
-                    raise gapsValueError(msg)
-
-            _dump_sorted(status)
-
+        arr, check_failed = _build_code_array(status, step_name)
         return_code = _parse_code_array(arr)
 
         fail_str = ""
         if return_code != StatusOption.FAILED and check_failed:
             fail_str = ", but some jobs have failed"
+
         logger.info(
             "Pipeline step %r for job %r %s%s. (%s)",
             step_name,
@@ -263,7 +232,8 @@ class Pipeline:
         pipeline : path-like
             Pipeline config file path.
         """
-        cls(pipeline)._cancel_all_jobs()  # ruff:ignore[private-member-access]
+        # ruff:ignore[private-member-access]
+        cls(pipeline)._cancel_all_jobs()
 
     @classmethod
     def run(cls, pipeline, monitor=True):
@@ -276,7 +246,8 @@ class Pipeline:
         monitor : bool
             Flag to perform continuous monitoring of the pipeline.
         """
-        cls(pipeline, monitor=monitor)._main()  # ruff:ignore[private-member-access]
+        # ruff:ignore[private-member-access]
+        cls(pipeline, monitor=monitor)._main()
 
 
 def _check_pipeline(config):
@@ -320,6 +291,47 @@ def _check_pipeline(config):
         raise gapsConfigError(msg)
 
     return pipeline
+
+
+def _build_code_array(status, step_name):
+    """Build an array of status enums for a given pipeline step"""
+    if step_name not in status.data:
+        # assume running
+        return [StatusOption.RUNNING], False
+
+    arr = []
+    check_failed = False
+    for job_name, job_info in status.data[step_name].items():
+        if job_name == StatusField.PIPELINE_INDEX:
+            continue
+
+        job_status = job_info.get(StatusField.JOB_STATUS)
+        job_enum = _status_to_enum(job_status)
+        if job_enum == StatusOption.FAILED:
+            check_failed = True
+        arr.append(job_enum)
+
+    _dump_sorted(status)
+    return arr, check_failed
+
+
+def _status_to_enum(job_status):
+    """Convert string status to StatusOption enum"""
+    if job_status == "successful":
+        return StatusOption.SUCCESSFUL
+    if job_status == "failed":
+        return StatusOption.FAILED
+    if job_status == "submitted":
+        return StatusOption.SUBMITTED
+    if job_status == "not submitted":
+        return StatusOption.NOT_SUBMITTED
+    if job_status == "running":
+        return StatusOption.RUNNING
+    if job_status is None:
+        return StatusOption.COMPLETE
+
+    msg = f"Job status code {job_status!r} not understood!"
+    raise gapsValueError(msg)
 
 
 def _parse_code_array(arr):
