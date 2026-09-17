@@ -115,7 +115,9 @@ class Pipeline:
     def _cancel_all_jobs(self):
         """Cancel all jobs in this pipeline"""
         status = self.status
-        for job_id, hardware in zip(status.job_ids, status.job_hardware):
+        for job_id, hardware in zip(
+            status.job_ids, status.job_hardware, strict=False
+        ):
             if job_id is None:
                 continue
 

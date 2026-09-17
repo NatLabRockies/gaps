@@ -83,7 +83,7 @@ class HpcJobManager(ABC):
         for row in queue_rows:
             job = [k.strip(" ") for k in row.strip(" ").split(" ") if k]
             job_id = int(job[header.index(cls.COLUMN_HEADERS.ID)])
-            queue_dict[job_id] = dict(zip(header, job))
+            queue_dict[job_id] = dict(zip(header, job, strict=False))
 
         return queue_dict
 

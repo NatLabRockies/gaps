@@ -1,9 +1,9 @@
 """GAPs enums"""
 
-from enum import Enum
+from enum import StrEnum
 
 
-class CaseInsensitiveEnum(str, Enum):
+class CaseInsensitiveEnum(StrEnum):
     """A string enum that is case insensitive"""
 
     def __new__(cls, value):
@@ -31,7 +31,8 @@ class CaseInsensitiveEnum(str, Enum):
         return None
 
     @classmethod
-    def _new_post_hook(cls, obj, value):  # ruff:ignore[unused-class-method-argument]
+    # ruff:ignore[unused-class-method-argument]
+    def _new_post_hook(cls, obj, value):
         """Hook for post-processing after __new__"""
         return obj
 

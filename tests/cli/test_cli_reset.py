@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-"""
-GAPs reset status command tests.
-"""
+"""GAPs reset status command tests"""
+
 from pathlib import Path
 from copy import deepcopy
 
@@ -147,7 +145,7 @@ def test_reset_keep_thru_option(
     status_df = status.as_df()
     collect_status = status_df[status_df.index.str.startswith("collect")]
     assert len(collect_status) == 2
-    assert (collect_status.job_status == StatusOption.SUCCESSFUL).all()
+    assert (collect_status.job_status == StatusOption.SUCCESSFUL.value).all()
     assert list(temp_status_dir.glob(Status.HIDDEN_SUB_DIR))
     assert len(list((temp_status_dir / Status.HIDDEN_SUB_DIR).glob("*"))) > 1
     assert (

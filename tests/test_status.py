@@ -576,7 +576,7 @@ def test_status_as_df(tmp_path):
     assert not status_df[StatusField.JOB_STATUS].isna().any()
 
     assert (
-        status_df[StatusField.JOB_STATUS] == StatusOption.NOT_SUBMITTED
+        status_df[StatusField.JOB_STATUS] == StatusOption.NOT_SUBMITTED.value
     ).all()
 
     status_df = Status(tmp_path).as_df(pipe_steps=["DNE"])
@@ -673,7 +673,7 @@ def test_status_for_failed_job(tmp_path, assert_message_was_logged):
 
     assert not list(tmp_path.glob("*"))
 
-    try:
+    try:  # ruff: ignore[too-many-statements-in-try-clause]
         with StatusUpdates(tmp_path, "generation", "test0", TEST_1_ATTRS_1):
             status = Status(tmp_path)
             status.update_from_all_job_files()
@@ -685,7 +685,7 @@ def test_status_for_failed_job(tmp_path, assert_message_was_logged):
             assert StatusField.TOTAL_RUNTIME not in status
             assert StatusField.RUNTIME_SECONDS not in status
             assert StatusField.OUT_FILE not in status
-            raise _TestError  # noqa
+            raise _TestError  # ruff: ignore[raise-within-try]
     except _TestError:
         pass
 
