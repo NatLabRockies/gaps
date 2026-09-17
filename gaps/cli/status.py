@@ -316,45 +316,50 @@ def main_monitor(folder, pipe_steps, status, include, recursive):
         folders = chain(folders, folders[0].rglob("*"))
 
     for directory in folders:
-        if not directory.is_dir():
-            continue
-        if directory.name == Status.HIDDEN_SUB_DIR:
-            continue
+        _monitor_directory(directory, pipe_steps, status, include)
 
-        pipe_status = Status(directory)
-        if not pipe_status:
-            print(f"No non-empty status file found in {str(directory)!r}. ")
-            continue
 
-        include_with_runtime = [*list(include), StatusField.RUNTIME_SECONDS]
-        df = pipe_status.as_df(
-            pipe_steps=pipe_steps, include_cols=include_with_runtime
+def _monitor_directory(directory, pipe_steps, status, include):
+    """Monitor a single directory"""
+    if not directory.is_dir():
+        return
+    if directory.name == Status.HIDDEN_SUB_DIR:
+        return
+
+    pipe_status = Status(directory)
+    if not pipe_status:
+        print(f"No non-empty status file found in {str(directory)!r}. ")
+        return
+
+    include_with_runtime = [*list(include), StatusField.RUNTIME_SECONDS]
+    df = pipe_status.as_df(
+        pipe_steps=pipe_steps, include_cols=include_with_runtime
+    )
+    if status:
+        df = _filter_df_for_status(df, status)
+
+    if df.empty:
+        print(
+            f"No status data found to display for {str(directory)!r}. "
+            "Please check your filters and try again."
         )
-        if status:
-            df = _filter_df_for_status(df, status)
+        return
 
-        if df.empty:
-            print(
-                f"No status data found to display for {str(directory)!r}. "
-                "Please check your filters and try again."
-            )
-            continue
+    runtime_stats = _calculate_runtime_stats(df)
+    aus_used = _calculate_aus(df)
+    walltime = _calculate_walltime(df)
 
-        runtime_stats = _calculate_runtime_stats(df)
-        aus_used = _calculate_aus(df)
-        walltime = _calculate_walltime(df)
-
-        _color_print(
-            df[list(df.columns)[:-1]].copy(),
-            directory.name,
-            pipe_steps,
-            status,
-            walltime,
-            runtime_stats,
-            total_aus_used=aus_used,
-            monitor_pid=pipe_status.get(StatusField.MONITOR_PID),
-            total_runtime_seconds=df[StatusField.RUNTIME_SECONDS].sum(),
-        )
+    _color_print(
+        df[list(df.columns)[:-1]].copy(),
+        directory.name,
+        pipe_steps,
+        status,
+        walltime,
+        runtime_stats,
+        total_aus_used=aus_used,
+        monitor_pid=pipe_status.get(StatusField.MONITOR_PID),
+        total_runtime_seconds=df[StatusField.RUNTIME_SECONDS].sum(),
+    )
 
 
 def status_command():

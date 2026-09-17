@@ -53,6 +53,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "complexipy>=7.0.1,<8",
   "ipython>=8.18.1,<9",
   "jupyter>=1.1.1,<2",
   "pipreqs>=0.4.13,<0.5",
@@ -151,6 +152,9 @@ jupyter = ">=1.1.1,<2"
 pipreqs = ">=0.4.13,<0.5"
 ruff = ">=0.15.22,<0.16"
 frozenlist = ">=1.7,<2"
+
+[tool.pixi.feature.dev.pypi-dependencies]
+complexipy = ">=7.0.1,<8"
 
 [tool.pixi.feature.test.dependencies]
 flaky = ">=3.8.1,<4"
@@ -321,3 +325,12 @@ omit = [
 [tool.pytest.ini_options]
 addopts = "--disable-warnings"
 testpaths = ["tests"]
+
+
+[tool.complexipy]
+paths = ["gaps"]
+max-complexity-allowed = 10
+exclude = ["tests/**"]
+failed = true
+sort = "desc"
+check-script = true

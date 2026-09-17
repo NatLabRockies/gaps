@@ -15,13 +15,11 @@ jobs:
   lint:
     name: Super Lint Code Base
     runs-on: ubuntu-latest
-
     permissions:
         contents: read
         packages: read
         # To report GitHub Actions status checks
         statuses: write
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
