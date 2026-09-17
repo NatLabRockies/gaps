@@ -26,48 +26,54 @@ def _reset_status(ctx, directory, force=False, after_step=None):
         directory = [Path("./")]
 
     for status_dir in directory:
-        # ruff:ignore[redefined-loop-name]
-        status_dir = Path(status_dir).expanduser().resolve()
-        status_file_dir = status_dir / Status.HIDDEN_SUB_DIR
-        if not status_file_dir.exists():
-            logger.debug(
-                "No status info detected in %r. Skipping...", str(status_dir)
-            )
-            continue
-
-        status = Status(status_dir)
-        is_processing = (
-            status.as_df()
-            .job_status.isin(
-                {StatusOption.SUBMITTED.value, StatusOption.RUNNING.value}
-            )
-            .any()
+        _reset_status_for_directory(
+            status_dir, force=force, after_step=after_step
         )
-        if is_processing and not force:
+
+
+def _reset_status_for_directory(status_dir, force=False, after_step=None):
+    """Reset the status for a given directory"""
+    status_dir = Path(status_dir).expanduser().resolve()
+    status_file_dir = status_dir / Status.HIDDEN_SUB_DIR
+    if not status_file_dir.exists():
+        logger.debug(
+            "No status info detected in %r. Skipping...", str(status_dir)
+        )
+        return
+
+    status = Status(status_dir)
+    is_processing = (
+        status.as_df()
+        .job_status.isin(
+            {StatusOption.SUBMITTED.value, StatusOption.RUNNING.value}
+        )
+        .any()
+    )
+    if is_processing and not force:
+        msg = (
+            f"Found queued/running jobs in {status_dir}. "
+            "Not resetting... (override this behavior with --force)"
+        )
+        warn(msg, gapsWarning)
+        return
+
+    if after_step:
+        if after_step not in status.data:
             msg = (
-                f"Found queued/running jobs in {status_dir}. "
-                "Not resetting... (override this behavior with --force)"
+                f"Command {after_step!r} not found as part of pipeline "
+                f"in {status_dir}. Not resetting..."
             )
             warn(msg, gapsWarning)
-            continue
+            return
 
-        if after_step:
-            if after_step not in status.data:
-                msg = (
-                    f"Command {after_step!r} not found as part of pipeline "
-                    f"in {status_dir}. Not resetting..."
-                )
-                warn(msg, gapsWarning)
-                continue
-            logger.info("Resetting status for all steps after %r", after_step)
-            status.update_from_all_job_files()
-            status.reset_after(after_step)
-            status.dump()
-        else:
-            logger.info(
-                "Removing status info for directory %r", str(status_dir)
-            )
-            shutil.rmtree(status_file_dir)
+        logger.info("Resetting status for all steps after %r", after_step)
+        status.update_from_all_job_files()
+        status.reset_after(after_step)
+        status.dump()
+        return
+
+    logger.info("Removing status info for directory %r", str(status_dir))
+    shutil.rmtree(status_file_dir)
 
 
 def reset_command():

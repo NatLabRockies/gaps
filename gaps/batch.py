@@ -95,6 +95,18 @@ class BatchJob:
         logger.debug("Using the following batch sets: %s", self._sets)
         logger.info("Preparing batch job directories...")
 
+        self._prepare_batch_sub_directories()
+        self._copy_pipeline_files()
+
+        logger.info("Batch job directories ready for execution.")
+
+    def _prepare_batch_sub_directories(self):
+        """Create all batch job sub-directories"""
+        for source_dir, filenames in self._files_to_copy():
+            self._prepare_batch_set_sub_directories(source_dir, filenames)
+
+    def _files_to_copy(self):
+        """Get all source files/directories to copy"""
         # walk through current directory getting everything to copy
         for source_dir, _, filenames in os.walk(self._base_dir):
             logger.debug("Processing files in : %s", source_dir)
@@ -107,30 +119,33 @@ class BatchJob:
             if any(job_tag in source_dir for job_tag in self._sets):
                 continue
 
-            # For each dir level, iterate through the batch arg combos
-            for tag, (arg_comb, mod_files, __) in self._sets.items():
-                mod_files = {Path(fp) for fp in mod_files}  # ruff:ignore[redefined-loop-name]
-                # Add the job tag to the directory path.
-                # This will copy config subdirs into the job subdirs
-                source_dir = Path(source_dir)  # ruff:ignore[redefined-loop-name]
-                destination_dir = (
-                    self._base_dir
-                    / tag
-                    / source_dir.relative_to(self._base_dir)
+            yield Path(source_dir), filenames
+
+    def _prepare_batch_set_sub_directories(self, source_dir, filenames):
+        """Prepare all batch set sub-directories"""
+        # For each dir level, iterate through the batch arg combos
+        for tag, (arg_comb, mod_files, __) in self._sets.items():
+            # This will copy config subdirs into the job subdirs
+            destination_dir = self._prepare_batch_set_destination_dir(
+                tag, source_dir
+            )
+            for name in filenames:
+                _copy_maybe_modified_file(
+                    name, source_dir, destination_dir, mod_files, arg_comb
                 )
-                logger.debug("Creating dir: %s", destination_dir)
-                destination_dir.mkdir(parents=True, exist_ok=True)
 
-                for name in filenames:
-                    if BATCH_CSV_FN in name:
-                        continue
-                    fp_source = source_dir / name
-                    fp_target = destination_dir / name
-                    if fp_source in mod_files:
-                        _mod_file(fp_source, fp_target, arg_comb)
-                    else:
-                        _copy_batch_file(fp_source, destination_dir / name)
+    def _prepare_batch_set_destination_dir(self, tag, source_dir):
+        """Prepare a single batch set sub-directory"""
+        # Add the job tag to the directory path.
+        destination_dir = (
+            self._base_dir / tag / source_dir.relative_to(self._base_dir)
+        )
+        logger.debug("Creating dir: %s", destination_dir)
+        destination_dir.mkdir(parents=True, exist_ok=True)
+        return destination_dir
 
+    def _copy_pipeline_files(self):
+        """Copy pipeline file to all of the batch job sub-directories"""
         for tag in self._sets:
             destination_dir = self._base_dir / tag
             pipeline_file_target = (
@@ -142,8 +157,6 @@ class BatchJob:
                 destination_dir
                 / self._pipeline_fp.relative_to(self._base_dir),
             )
-
-        logger.info("Batch job directories ready for execution.")
 
     def _run_pipelines(self, monitor_background=False):
         """Run the pipeline modules for each batch job"""
@@ -337,15 +350,7 @@ def _check_sets(config, base_dir):
 
     batch_sets = []
     for batch_set in config["sets"]:
-        if not isinstance(batch_set, dict):
-            msg = "Batch sets must be dictionaries."
-            raise gapsConfigError(msg)
-        if "args" not in batch_set:
-            msg = 'All batch sets must have "args" key.'
-            raise gapsConfigError(msg)
-        if "files" not in batch_set:
-            msg = 'All batch sets must have "files" key.'
-            raise gapsConfigError(msg)
+        _confirm_required_batch_set_structure(batch_set)
         batch_set["files"] = resolve_all_paths(batch_set["files"], base_dir)
         for fpath in batch_set["files"]:
             if not Path(fpath).exists():
@@ -355,6 +360,19 @@ def _check_sets(config, base_dir):
 
     config["sets"] = batch_sets
     return config
+
+
+def _confirm_required_batch_set_structure(batch_set):
+    """Confirm that a batch set has the required structure"""
+    if not isinstance(batch_set, dict):
+        msg = "Batch sets must be dictionaries."
+        raise gapsConfigError(msg)
+    if "args" not in batch_set:
+        msg = 'All batch sets must have "args" key.'
+        raise gapsConfigError(msg)
+    if "files" not in batch_set:
+        msg = 'All batch sets must have "files" key.'
+        raise gapsConfigError(msg)
 
 
 def _enumerated_product(args):
@@ -371,19 +389,7 @@ def _parse_config(config):
     for batch_set in config["sets"]:
         set_tag = batch_set.get("set_tag", "")
         args = batch_set["args"]
-
-        if set_tag in sets:
-            msg = f"Found multiple sets with the same set_tag: {set_tag!r}"
-            raise gapsValueError(msg)
-
-        for key, value in args.items():
-            if isinstance(value, str):
-                msg = (
-                    "Batch arguments should be lists but found "
-                    f"{key!r}: {value!r}"
-                )
-                raise gapsValueError(msg)
-
+        _validate_batch_set(set_tag, args, sets)
         sets.add(set_tag)
 
         products = _enumerated_product(args.values())
@@ -394,12 +400,7 @@ def _parse_config(config):
             num_batch_jobs,
             set_str,
         )
-        if num_batch_jobs > _TOO_MANY_JOBS_WARNING_THRESH:
-            msg = (
-                f"Large number of batch jobs found: {num_batch_jobs:,}! "
-                "Proceeding, but consider double checking your config."
-            )
-            warn(msg, gapsWarning)
+        _warn_if_too_many_jobs(num_batch_jobs)
 
         for inds, comb in products:
             arg_combo = dict(zip(args, comb))
@@ -413,6 +414,30 @@ def _parse_config(config):
             )
 
     return batch_sets
+
+
+def _validate_batch_set(set_tag, args, sets):
+    """Validate a batch set's tag and arguments"""
+    if set_tag in sets:
+        msg = f"Found multiple sets with the same set_tag: {set_tag!r}"
+        raise gapsValueError(msg)
+
+    for key, value in args.items():
+        if isinstance(value, str):
+            msg = (
+                f"Batch arguments should be lists but found {key!r}: {value!r}"
+            )
+            raise gapsValueError(msg)
+
+
+def _warn_if_too_many_jobs(num_batch_jobs):
+    """Warn if the number of batch jobs exceeds the threshold"""
+    if num_batch_jobs > _TOO_MANY_JOBS_WARNING_THRESH:
+        msg = (
+            f"Large number of batch jobs found: {num_batch_jobs:,}! "
+            "Proceeding, but consider double checking your config."
+        )
+        warn(msg, gapsWarning)
 
 
 def _make_job_tag(set_tag, arg_comb, arg_inds):
@@ -446,6 +471,22 @@ def _format_value(value):
     return value
 
 
+def _copy_maybe_modified_file(
+    filename, source_dir, destination_dir, mod_files, arg_comb
+):
+    """Copy a file to the batch job directory, modifying it if needed"""
+    if BATCH_CSV_FN in filename:
+        return
+
+    mod_files = {Path(fp) for fp in mod_files}
+    fp_source = source_dir / filename
+    fp_target = destination_dir / filename
+    if fp_source in mod_files:
+        _mod_file(fp_source, fp_target, arg_comb)
+    else:
+        _copy_batch_file(fp_source, destination_dir / filename)
+
+
 def _mod_file(fpath_in, fpath_out, arg_mods):
     """Import and modify the contents of a json. Dump to new file"""
     logger.debug(
@@ -456,6 +497,7 @@ def _mod_file(fpath_in, fpath_out, arg_mods):
     config_type.write(fpath_out, _mod_dict(config, arg_mods))
 
 
+# complexipy: ignore
 def _mod_dict(inp, arg_mods):
     """Recursively modify key/value pairs in a dictionary"""
 
@@ -505,6 +547,7 @@ def _source_needs_copying(fp_source, fp_target):
 
 
 def _json_load_with_cleaning(input_str):
+    """Load a JSON string; handling common formatting issues"""
     return json.loads(
         input_str.replace("'", '"')
         .removesuffix('"""')

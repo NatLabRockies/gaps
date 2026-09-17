@@ -329,24 +329,9 @@ class Status(UserDict):
         if not self.data:
             return pd.DataFrame(columns=output_cols)
 
-        data = deepcopy(self.data)
-        requested_steps = pipe_steps or self.keys()
-        steps = []
-        for step, status in data.items():
-            if step not in requested_steps:
-                continue
-            try:
-                step_index = status.pop(StatusField.PIPELINE_INDEX, None)
-            except (AttributeError, TypeError):
-                continue
-            if not status:
-                status = {step: {}}  # ruff:ignore[redefined-loop-name]
-            try:
-                step_df = pd.DataFrame(status).T
-            except ValueError:
-                continue
-            step_df[f"{StatusField.PIPELINE_INDEX}"] = step_index
-            steps.append(step_df)
+        steps = _collect_steps_for_df(
+            deepcopy(self.data), requested_steps=pipe_steps or self.keys()
+        )
 
         try:
             step_df = pd.concat(steps, sort=False)
@@ -535,31 +520,71 @@ class Status(UserDict):
 
         # Update status data dict and file if job file was found
         if current is not None:
-            self.data = recursively_update_dict(self.data, current)
-
-            try:
-                job_data = self.data[pipeline_step][job_name]
-            except KeyError:
-                job_data = None
-
-            if job_data is not None and job_data.get(StatusField.JOB_ID):
-                self._update_job_status_from_hardware(
-                    job_data, hardware_status_retriever
-                )
+            self._update_status_from_completion_file(
+                current, pipeline_step, job_name, hardware_status_retriever
+            )
 
         # check job status via hardware if job file not found.
         elif pipeline_step in self.data:
-            # job exists
-            if job_name in self.data[pipeline_step]:
-                self._update_job_status_from_hardware(
-                    self.data[pipeline_step][job_name],
-                    hardware_status_retriever,
+            self._update_status_from_hardware(
+                pipeline_step, job_name, hardware_status_retriever
+            )
+
+        self.dump()
+
+    def _update_status_from_completion_file(
+        self,
+        job_completion_file,
+        pipeline_step,
+        job_name,
+        hardware_status_retriever,
+    ):
+        """Update job status from completion file"""
+        self.data = recursively_update_dict(self.data, job_completion_file)
+
+        try:
+            job_data = self.data[pipeline_step][job_name]
+        except KeyError:
+            job_data = None
+
+        if job_data is not None and job_data.get(StatusField.JOB_ID):
+            self._update_job_status_from_hardware(
+                job_data, hardware_status_retriever
+            )
+
+    def _update_status_from_hardware(
+        self, pipeline_step, job_name, hardware_status_retriever
+    ):
+        """Update job status from hardware"""
+        # job exists
+        if job_name in self.data[pipeline_step]:
+            self._update_job_status_from_hardware(
+                self.data[pipeline_step][job_name], hardware_status_retriever
+            )
+        # job does not yet exist
+        else:
+            self.data[pipeline_step][job_name] = {
+                StatusField.JOB_STATUS: StatusOption.NOT_SUBMITTED
+            }
+
+    def _mark_status_as_submitted(self, job_attrs, pipeline_step, job_name):
+        """Mark a job as submitted"""
+        job_status = job_attrs.get(StatusField.JOB_STATUS)
+        if job_status != StatusOption.SUBMITTED:
+            if job_status is not None:
+                msg = (
+                    f"Attempting to mark a job as submitted but included a "
+                    f"{StatusField.JOB_STATUS} value of {job_status!r} in the "
+                    f"job_attrs dictionary! Setting the job status to "
+                    f"{StatusOption.SUBMITTED!r} before writing."
                 )
-            # job does not yet exist
-            else:
-                self.data[pipeline_step][job_name] = {
-                    StatusField.JOB_STATUS: StatusOption.NOT_SUBMITTED
-                }
+                warn(msg, gapsWarning)
+            job_attrs[StatusField.JOB_STATUS] = StatusOption.SUBMITTED
+
+        if pipeline_step not in self.data:
+            self.data[pipeline_step] = {job_name: job_attrs}
+        else:
+            self.data[pipeline_step][job_name] = job_attrs
 
         self.dump()
 
@@ -686,24 +711,7 @@ class Status(UserDict):
         if exists and not replace:
             return
 
-        job_status = job_attrs.get(StatusField.JOB_STATUS)
-        if job_status != StatusOption.SUBMITTED:
-            if job_status is not None:
-                msg = (
-                    f"Attempting to mark a job as submitted but included a "
-                    f"{StatusField.JOB_STATUS} value of {job_status!r} in the "
-                    f"job_attrs dictionary! Setting the job status to "
-                    f"{StatusOption.SUBMITTED!r} before writing."
-                )
-                warn(msg, gapsWarning)
-            job_attrs[StatusField.JOB_STATUS] = StatusOption.SUBMITTED
-
-        if pipeline_step not in obj.data:
-            obj.data[pipeline_step] = {job_name: job_attrs}
-        else:
-            obj.data[pipeline_step][job_name] = job_attrs
-
-        obj.dump()
+        obj._mark_status_as_submitted(job_attrs, pipeline_step, job_name)
 
     @classmethod
     def job_exists(cls, status_dir, job_name, pipeline_step=None):
@@ -735,19 +743,7 @@ class Status(UserDict):
         if not obj.data:
             return False
 
-        if pipeline_step is not None:
-            jobs = [obj.data.get(pipeline_step)]
-        else:
-            jobs = obj.data.values()
-
-        for job in jobs:
-            if not job:
-                continue
-            for name in job:
-                if name == job_name:
-                    return True
-
-        return False
+        return _job_name_found_in_status(obj.data, pipeline_step, job_name)
 
     @classmethod
     def retrieve_job_status(
@@ -774,7 +770,8 @@ class Status(UserDict):
             Status string or `None` if job/pipeline step not found.
         """
         hsr = HardwareStatusRetriever(subprocess_manager)
-        return cls(status_dir)._retrieve_job_status(  # ruff:ignore[private-member-access]
+        # ruff:ignore[private-member-access]
+        return cls(status_dir)._retrieve_job_status(
             pipeline_step, job_name, hsr
         )
 
@@ -1043,3 +1040,42 @@ def _iter_job_status(status):
         if not isinstance(job_status, dict):
             continue
         yield job_status
+
+
+def _collect_steps_for_df(data, requested_steps):
+    """Collect DataFrames for the requested steps from status data"""
+    steps = []
+    for step, status in data.items():
+        if step not in requested_steps:
+            continue
+        try:
+            step_index = status.pop(StatusField.PIPELINE_INDEX, None)
+        except (AttributeError, TypeError):
+            continue
+        if not status:
+            status = {step: {}}  # ruff:ignore[redefined-loop-name]
+        try:
+            step_df = pd.DataFrame(status).T
+        except ValueError:
+            continue
+        step_df[f"{StatusField.PIPELINE_INDEX}"] = step_index
+        steps.append(step_df)
+
+    return steps
+
+
+def _job_name_found_in_status(data, pipeline_step, job_name):
+    """Determine if job name exists in status"""
+    if pipeline_step is not None:
+        jobs = [data.get(pipeline_step)]
+    else:
+        jobs = data.values()
+
+    for job in jobs:
+        if not job:
+            continue
+        for name in job:
+            if name == job_name:
+                return True
+
+    return False
