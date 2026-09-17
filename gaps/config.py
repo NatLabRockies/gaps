@@ -249,6 +249,7 @@ def load_config(config_filepath, resolve_paths=True, excluded_keys=None):
     gapsValueError
         If input `config_filepath` has no file ending.
     """
+
     # TODO: maybe also have a "required keys" argument
     config_filepath = Path(config_filepath).expanduser().resolve()
     if "." not in config_filepath.name:
@@ -257,6 +258,7 @@ def load_config(config_filepath, resolve_paths=True, excluded_keys=None):
             f"{config_filepath.name}"
         )
         raise gapsValueError(msg)
+
     config_type = ConfigType(config_filepath.name.split(".")[-1])
     config = config_type.load(config_filepath)
     if resolve_paths:
