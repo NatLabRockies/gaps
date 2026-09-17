@@ -19,6 +19,17 @@ def run_func():
     """Test run function"""
 
 
+def test_script_cli_help(cli_runner):
+    """Test that script help explains command path handling."""
+    main = make_cli([CLICommandFromFunction(run_func, add_collect=False)])
+
+    result = cli_runner.invoke(main, ["script", "--help"])
+
+    assert result.exit_code == 0
+    assert "paths embedded in `cmd` are not resolved" in result.output
+    assert "relative to the command's working directory" in result.output
+
+
 def test_script_cli(tmp_path, cli_runner, runnable_script):
     """Test the script command basic execution."""
 
