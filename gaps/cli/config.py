@@ -270,11 +270,13 @@ class _FromConfig:
             node_specific_config = self._compile_node_config(tag)
             node_specific_config.update(extra_exec_args)
 
-            for key, val in zip(keys_to_run, values):
+            for key, val in zip(keys_to_run, values, strict=False):
                 if isinstance(key, str):
                     node_specific_config.update({key: val})
                 else:
-                    node_specific_config.update(dict(zip(key, val)))
+                    node_specific_config.update(
+                        dict(zip(key, val, strict=False))
+                    )
 
             cmd = self._compile_run_command(node_specific_config)
             kickoff_job(self.ctx, cmd, exec_kwargs)
@@ -362,7 +364,10 @@ class _FromConfig:
             else:
                 lists_to_run.append(
                     list(
-                        zip(*[self.config.get(k) or [None] for k in key_group])
+                        zip(
+                            *[self.config.get(k) or [None] for k in key_group],
+                            strict=False,
+                        )
                     )
                 )
         return keys_to_run, lists_to_run

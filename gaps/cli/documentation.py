@@ -737,7 +737,7 @@ def _batch_command_help():  # pragma: no cover
 def _format_dict(sample, names, batch_docs=False):  # pragma: no cover
     """Format a sample into a documentation config"""
     configs = {}
-    for name, c_type in zip(names, CONFIG_TYPES):
+    for name, c_type in zip(names, CONFIG_TYPES, strict=False):
         configs[name] = config_as_str_for_docstring(
             sample,
             config_type=c_type,

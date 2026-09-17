@@ -342,10 +342,9 @@ class Status(UserDict):
             if field not in step_df.columns:
                 step_df[f"{field}"] = np.nan
 
-        step_df.loc[
-            step_df[StatusField.JOB_STATUS].isna(),
-            StatusField.JOB_STATUS.value,
-        ] = StatusOption.NOT_SUBMITTED.value
+        step_df[StatusField.JOB_STATUS] = step_df[
+            StatusField.JOB_STATUS
+        ].fillna(StatusOption.NOT_SUBMITTED.value)
 
         step_df = _add_elapsed_time(step_df)
 
@@ -470,7 +469,7 @@ class Status(UserDict):
         for status in self.values():
             try:
                 yield from _iter_job_status(status)
-            except AttributeError:  # ruff:ignore[try-except-in-loop]
+            except AttributeError:
                 continue
 
     @staticmethod
@@ -925,26 +924,48 @@ def _add_elapsed_time(status_df):
     """Add elapsed time to status DataFrame"""
     has_start_time = ~status_df[StatusField.TIME_START].isna()
     has_no_end_time = status_df[StatusField.TIME_END].isna()
-    has_not_failed = status_df[StatusField.JOB_STATUS] != StatusOption.FAILED
-    mask = has_start_time & (has_no_end_time & has_not_failed)
+    has_not_failed = (
+        status_df[StatusField.JOB_STATUS] != StatusOption.FAILED.value
+    )
+    still_running_mask = has_start_time & (has_no_end_time & has_not_failed)
 
     status_df = _add_time_cols_if_needed(status_df)
-    start_times = status_df.loc[mask, StatusField.TIME_START]
+    start_times = status_df.loc[still_running_mask, StatusField.TIME_START]
     start_times = pd.to_datetime(start_times, format=DT_FMT)
-    elapsed_times = dt.datetime.now() - start_times
-    elapsed_times = elapsed_times.apply(lambda dt: dt.total_seconds())
-    status_df.loc[mask, StatusField.RUNTIME_SECONDS] = elapsed_times
-    elapsed_times = elapsed_times.apply(_elapsed_time_as_str)
-    elapsed_times = elapsed_times.apply(lambda time_str: f"{time_str} (r)")
-    status_df.loc[mask, StatusField.TOTAL_RUNTIME] = elapsed_times
+    elapsed_times = pd.Timestamp.now() - start_times
+    elapsed_seconds = elapsed_times.dt.total_seconds()
+    status_df.loc[still_running_mask, StatusField.RUNTIME_SECONDS] = (
+        elapsed_seconds
+    )
+    formatted_elapsed_times = elapsed_seconds.map(
+        lambda seconds: f"{_elapsed_time_as_str(seconds)} (r)"
+    )
+    status_df.loc[still_running_mask, StatusField.TOTAL_RUNTIME] = (
+        formatted_elapsed_times
+    )
     return status_df
 
 
 def _add_time_cols_if_needed(status_df):
     """Adds any missing time cols to avoid pandas 2.0 warnings"""
-    for col in [StatusField.RUNTIME_SECONDS, StatusField.TOTAL_RUNTIME]:
-        if col not in status_df:
-            status_df[col] = None
+    if StatusField.RUNTIME_SECONDS not in status_df:
+        status_df[StatusField.RUNTIME_SECONDS] = pd.Series(
+            pd.NA, index=status_df.index, dtype="Float64"
+        )
+    else:
+        status_df[StatusField.RUNTIME_SECONDS] = status_df[
+            StatusField.RUNTIME_SECONDS
+        ].astype("Float64")
+
+    if StatusField.TOTAL_RUNTIME not in status_df:
+        status_df[StatusField.TOTAL_RUNTIME] = pd.Series(
+            pd.NA, index=status_df.index, dtype="string"
+        )
+    else:
+        status_df[StatusField.TOTAL_RUNTIME] = status_df[
+            StatusField.TOTAL_RUNTIME
+        ].astype("string")
+
     return status_df
 
 

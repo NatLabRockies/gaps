@@ -377,7 +377,13 @@ def _confirm_required_batch_set_structure(batch_set):
 
 def _enumerated_product(args):
     """An enumerated product function"""
-    return list(zip(product(*(range(len(x)) for x in args)), product(*args)))
+    return list(
+        zip(
+            product(*(range(len(x)) for x in args)),
+            product(*args),
+            strict=False,
+        )
+    )
 
 
 def _parse_config(config):
@@ -403,8 +409,8 @@ def _parse_config(config):
         _warn_if_too_many_jobs(num_batch_jobs)
 
         for inds, comb in products:
-            arg_combo = dict(zip(args, comb))
-            arg_inds = dict(zip(args, inds))
+            arg_combo = dict(zip(args, comb, strict=False))
+            arg_inds = dict(zip(args, inds, strict=False))
             tag_arg_comb = {
                 k: v for k, v in arg_combo.items() if len(args[k]) > 1
             }
