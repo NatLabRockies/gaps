@@ -913,8 +913,11 @@ CSV Batch Config
 ^^^^^^^^^^^^^^^^
 If we want to model many unique combinations of parameters with ``batch``, the setup of individual sets
 can become cumbersome (and barely more efficient than writing a script to perform the setup by hand).
-Luckily, ``batch`` allows you to intuitively and efficiently setup many parameter combinations with
-a simple CSV input.
+Luckily, ``batch`` allows you to intuitively and efficiently set up many parameter combinations with
+a simple CSV input. Unlike a JSON batch config, which produces every permutation of the values within
+each set, a CSV batch config creates exactly one run for each row. Values in different rows are never
+permuted with one another, so the CSV format is useful when every desired parameter combination is
+already known.
 
 Let's take the example from the previous section, but add a few more turbine combinations to the mix:
 
@@ -952,9 +955,25 @@ CSV file like so:
 
 
 Notice how we have included the ``set_tag``, ``pipeline_config``, and ``files`` columns. This is because this
-CSV file doubles as the batch config file! In other words, once you set up the CSV file with the parameter
-combination you want to model, you can pass this file directly to ``batch`` and let it do all the work for you!
-Let's try running the command to see what we get:
+CSV file doubles as the batch config file. The columns have the following meanings:
+
+    - ``set_tag`` is required and must be unique in every row. It becomes the name of that run's
+        sub-directory.
+    - ``pipeline_config`` is required and identifies the pipeline configuration to copy and execute.
+        Use the same value in every row; GAPs uses the value from the first row for the batch. Relative
+        paths are resolved from the directory containing the CSV file.
+    - ``files`` is required and contains a list of the JSON or YAML configuration files in which the
+        row's parameters should be replaced. The list may differ by row, and relative paths are resolved
+        from the directory containing the CSV file.
+    - Every other column is a parameter. Its column heading must match a key in one of the files listed
+        by ``files``, and its value in a given row is written to every matching key found recursively in
+        those files for that run.
+
+Thus, the first row in the table creates a directory named ``T1``, copies the batch project into it,
+and sets ``wind_turbine_hub_ht`` to ``110`` and ``wind_turbine_rotor_diameter`` to ``145`` in
+``turbine.json``. The second row independently creates ``T2`` with values ``115`` and ``150``, and so
+on. Once you set up the CSV file with the parameter combinations you want to model, you can pass the
+file directly to ``batch``:
 
 .. code-block::
     shell
@@ -964,15 +983,16 @@ Let's try running the command to see what we get:
     batch_jobs.csv  config_gen.json  config_pipeline.json  parameters.csv  T1  T2  T3  T4  T5  T6  T7  T8  turbine.json
 
 
-Note that the sub-directory names are now uniquely defined by the ``set_tag`` column.
-As before, we can validate that the setup worked as intended and kickoff the model runs by leaving off the ``--dry``
-flag.
+The sub-directory names are defined by the ``set_tag`` column. As before, we can validate that the setup
+worked as intended and kick off the model runs by leaving off the ``--dry`` flag.
 
-One important caveat for the CSV batch input is that any JSON-like objects (e.g. lists, dicts, etc), *must* be
-enclosed in double quotes (``"``). This means that any strings within those objects *must* be enclosed in
-single quotes. You can see this use pattern in the ``files`` column in the table above. Although this can be
-tricky to get used to at first, this does allow you to use ``batch`` to parametrize more complicated inputs
-like dictionaries (e.g. ``"{'dset': 'big_brown_bat', 'method': 'sum', 'value': 0}"``).
+CSV readers infer unquoted scalar values such as numbers and strings in the usual way. To use a list,
+dictionary, or other JSON-like value, enclose the entire field in double quotes (``"``) so that commas do
+not split it into multiple CSV columns, and enclose strings inside the object in single quotes. You can see
+this pattern in the ``files`` column above. GAPs parses these fields before writing them to the target config,
+which also allows parameters to contain structured values such as
+``"{'dset': 'big_brown_bat', 'method': 'sum', 'value': 0}"``. A field that cannot be parsed as a JSON-like
+value is retained as a string.
 
 
 .. Note:: For more about ``batch``, see the `reVX setbacks batched execution example <https://github.com/NatLabRockies/reVX/tree/main/reVX/setbacks#batched-execution>`_, which is powered by GAPs.

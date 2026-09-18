@@ -56,8 +56,9 @@ def preprocess_script_config(config, cmd):
         A single command represented as a string or a list of command
         strings to execute on a node. If the input is a list, each
         command string in the list will be executed on a separate node.
-        For example, to run a python script, simply specify
-        ::
+        For example, to run a python script, simply specify:
+
+        .. code-block:: text
 
             "cmd": "python my_script.py"
 
@@ -70,9 +71,9 @@ def preprocess_script_config(config, cmd):
            ``./my_script.py`` is interpreted relative to the command's
            working directory.
 
-
         To run multiple commands in parallel, supply them as a list:
-        ::
+
+        .. code-block:: text
 
             "cmd": [
                 "python /path/to/my_script/py -a -out out_file.txt",

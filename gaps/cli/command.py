@@ -118,7 +118,7 @@ class CLICommandFromFunction(AbstractBaseCLICommandConfiguration):
             sure to "request" the ``tag`` argument. This function can
             "request" the following arguments by including them in the
             function signature (``gaps`` will automatically pass them to
-            the function without any additional used input):
+            the function without any additional user input):
 
                 tag : str
                     Short string unique to this job run that can be used
@@ -166,6 +166,11 @@ class CLICommandFromFunction(AbstractBaseCLICommandConfiguration):
                     Flag indicating whether the user has selected a
                     DEBUG verbosity level for logs.
 
+            These parameters are supplied by GAPs, not users. They are
+            intentionally omitted from the generated CLI documentation
+            and template configuration files. For example, users should
+            not add ``out_dir`` to their input config.
+
             If your function is capable of multiprocessing, you should
             also include ``max_workers`` in the function signature.
             ``gaps`` will pass an integer equal to the number of
@@ -177,10 +182,10 @@ class CLICommandFromFunction(AbstractBaseCLICommandConfiguration):
                          "memory_utilization_limit",
                          "timeout", "pool_size"}`` are assumed to
                          describe execution control. If you request any
-                         of these as function arguments, users of your
-                         CLI will specify them in the
-                         `execution_control` block of the input config
-                         file.
+                         of these as function arguments, GAPs moves the
+                         documentation and template values into
+                         ``execution_control``. Users must specify them
+                         there instead of as top-level config keys.
 
             Note that the ``config`` parameter is not allowed as
             a function signature item. Please request all the required
@@ -451,7 +456,7 @@ class CLICommandFromClass(AbstractBaseCLICommandConfiguration):
             the ``tag`` argument. This method can "request" the
             following arguments by including them in the method
             signature (``gaps`` will automatically pass them to the
-            method without any additional used input):
+            method without any additional user input):
 
                 tag : str
                     Short string unique to this job run that can be used
@@ -499,6 +504,11 @@ class CLICommandFromClass(AbstractBaseCLICommandConfiguration):
                     Flag indicating whether the user has selected a
                     DEBUG verbosity level for logs.
 
+            These parameters are supplied by GAPs, not users. They are
+            intentionally omitted from the generated CLI documentation
+            and template configuration files. For example, users should
+            not add ``out_dir`` to their input config.
+
             If your function is capable of multiprocessing, you should
             also include ``max_workers`` in the function signature.
             ``gaps`` will pass an integer equal to the number of
@@ -510,10 +520,10 @@ class CLICommandFromClass(AbstractBaseCLICommandConfiguration):
                          "memory_utilization_limit",
                          "timeout", "pool_size"}`` are assumed to
                          describe execution control. If you request any
-                         of these as function arguments, users of your
-                         CLI will specify them in the
-                         `execution_control` block of the input config
-                         file.
+                         of these as function arguments, GAPs moves the
+                         documentation and template values into
+                         ``execution_control``. Users must specify them
+                         there instead of as top-level config keys.
 
             Note that the ``config`` parameter is not allowed as
             a function signature item. Please request all the required
