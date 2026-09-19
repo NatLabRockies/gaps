@@ -31,6 +31,7 @@ from gaps.warn import gapsWarning
 logger = logging.getLogger(__name__)
 
 _TOO_MANY_JOBS_WARNING_THRESH = 1_000
+_LARGE_COPY_WARNING_THRESH = 1024**3  # 1GB
 _COPY_OPTIONS = ("all", "config")
 BATCH_CSV_FN = "batch_jobs.csv"
 BatchSet = namedtuple("BatchSet", ["arg_combo", "file_set", "tag"])
@@ -177,6 +178,8 @@ class BatchJob:
 
     def _source_dir_files_to_copy(self):
         """Get all files from source dir to copy"""
+        projected_copy_size = 0
+        large_copy_warning_issued = False
         for source_dir, _, filenames in os.walk(self._base_dir):
             logger.debug("Processing files in : %s", source_dir)
             logger.debug(
@@ -187,6 +190,23 @@ class BatchJob:
             # don't make additional copies of job sub directories.
             if any(job_tag in source_dir for job_tag in self._sets):
                 continue
+
+            projected_copy_size += len(self._sets) * sum(
+                (Path(source_dir) / filename).stat().st_size
+                for filename in filenames
+            )
+            if (
+                projected_copy_size > _LARGE_COPY_WARNING_THRESH
+                and not large_copy_warning_issued
+            ):
+                msg = (
+                    "Batch is recursively copying more than 1 GiB of data "
+                    f"across {len(self._sets):,} job directories. Consider "
+                    'using "copy": "config" to restrict copies to files '
+                    "referenced by the run configuration."
+                )
+                warn(msg, gapsWarning)
+                large_copy_warning_issued = True
 
             yield Path(source_dir), filenames
 
