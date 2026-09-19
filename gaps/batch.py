@@ -116,7 +116,10 @@ class BatchInfo:
         """
         path = Path(path).resolve()
         relative_path = path.relative_to(self.base_dir)
-        if Status.HIDDEN_SUB_DIR in relative_path.parts:
+        if (
+            path.name == BATCH_CSV_FN
+            or Status.HIDDEN_SUB_DIR in relative_path.parts
+        ):
             return True
 
         return any(
@@ -760,9 +763,6 @@ def _copy_maybe_modified_file(
     filename, source_dir, destination_dir, mod_files, arg_comb
 ):
     """Copy a file to the batch job directory, modifying it if needed"""
-    if BATCH_CSV_FN in filename:
-        return
-
     mod_files = {Path(fp) for fp in mod_files}
     fp_source = source_dir / filename
     fp_target = destination_dir / filename

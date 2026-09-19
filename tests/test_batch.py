@@ -468,7 +468,7 @@ def test_batch_job_setup_copies_config_files_only(typical_batch_config):
 def test_batch_job_does_not_copy_status_or_logs(
     typical_batch_config, copy_option
 ):
-    """Test status and log directories are excluded from batch copies."""
+    """Test generated and runtime files are excluded from batch copies"""
     batch_dir = typical_batch_config.parent
     batch_config = ConfigType.JSON.load(typical_batch_config)
     batch_config["copy"] = copy_option
@@ -501,6 +501,7 @@ def test_batch_job_does_not_copy_status_or_logs(
     batch_job.run(dry_run=True)
 
     for job_dir in batch_job._batch_info.sub_dirs:
+        assert not (job_dir / BATCH_CSV_FN).exists()
         assert not (job_dir / ".gaps").exists()
         assert not (job_dir / "pipeline_logs").exists()
         assert not (job_dir / "command_logs").exists()
