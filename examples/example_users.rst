@@ -767,10 +767,9 @@ track of the parametrized sub-directories. More importantly, we see that the com
 fifteen sub-directories, each prefixed with our ``"set_tag"`` from above, and each containing a
 copy of the run configuration.
 
-.. WARNING:: ``batch`` copies *ALL* files in your top-level directory to each of the sub-directories.
-   This means large files in your top-level directory may be (unnecessarily) copied many times. Always
-   keep "static" files somewhere other than your top-level directory and generally try to limit your run
-   directory to only contain configuration files.
+.. WARNING:: The default ``"copy": "all"`` behavior copies *ALL* files in your top-level directory to
+    each sub-directory. This means large files may be copied unnecessarily many times. Use
+    ``"copy": "config"`` to restrict copies to files referenced by the run configuration.
 
 We can also verify that batch correctly updated the parameters in each sub-directory:
 
