@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
-# pylint: disable=too-many-locals,too-many-statements,redefined-outer-name
-"""
-PyTest file for batch jobs.
-"""
+"""PyTest file for batch jobs"""
+
 import os
 import json
 import time
@@ -204,8 +201,7 @@ def test_parse_config_duplicate_set_tags():
 
 
 def test_batch_job_setup_with_yaml_files_no_sort(batch_config_with_yaml):
-    """Test the creation and deletion of a batch job directory with yaml files,
-    and ensure that the output yaml files are NOT sorted."""
+    """Test batch setup with yaml files"""
 
     batch_dir = batch_config_with_yaml.parent
     count_0 = len(list(batch_dir.glob("*")))
@@ -213,7 +209,7 @@ def test_batch_job_setup_with_yaml_files_no_sort(batch_config_with_yaml):
 
     BatchJob(batch_config_with_yaml).run(dry_run=True)
     job_dir = batch_dir / "set1_ic10_ic31"
-    with open(job_dir / "test.yaml", "r") as test_file:
+    with (job_dir / "test.yaml").open("r") as test_file:
         key_order = [line.split(":")[0] for line in test_file]
 
     correct_key_order = [
@@ -231,8 +227,7 @@ def test_batch_job_setup_with_yaml_files_no_sort(batch_config_with_yaml):
 
 
 def test_batch_job_setup_with_yaml_files(batch_config_with_yaml):
-    """Test the creation and deletion of a batch job directory with yaml files.
-    Does not test batch execution which will require slurm."""
+    """Test batch setup with yaml files"""
 
     batch_dir = batch_config_with_yaml.parent
 
@@ -243,7 +238,7 @@ def test_batch_job_setup_with_yaml_files(batch_config_with_yaml):
 
     BatchJob(batch_config_with_yaml).run(dry_run=True)
 
-    dir_list = set(fp.name for fp in batch_dir.glob("*"))
+    dir_list = {fp.name for fp in batch_dir.glob("*")}
     set1_count = len([fn for fn in dir_list if fn.startswith("set1_")])
     set2_count = len([fn for fn in dir_list if fn.startswith("ic2")])
     assert set1_count == 6
@@ -301,8 +296,7 @@ def test_invalid_mod_file_input(batch_config_with_yaml):
 
 @pytest.mark.parametrize("typical_batch_config", (True, False), indirect=True)
 def test_batch_job_setup(typical_batch_config, monkeypatch):
-    """Test the creation and deletion of a batch job directory.
-    Does not test batch execution which will require slurm."""
+    """Test batch setup"""
 
     batch_dir = typical_batch_config.parent
 
@@ -313,7 +307,7 @@ def test_batch_job_setup(typical_batch_config, monkeypatch):
 
     BatchJob(typical_batch_config).run(dry_run=True)
 
-    dir_list = set(fp.name for fp in batch_dir.glob("*"))
+    dir_list = {fp.name for fp in batch_dir.glob("*")}
     assert "turbine.json" not in dir_list
     set1_count = len([fn for fn in dir_list if fn.startswith("set1_")])
     set2_count = len([fn for fn in dir_list if fn.startswith("set2_")])
@@ -346,7 +340,7 @@ def test_batch_job_setup(typical_batch_config, monkeypatch):
 
     args = config["sets"][0]["args"]
     job_dir = batch_dir / "set1_wthh140_wtpp1"  # cspell: disable-line
-    dir_list = set(fp.name for fp in job_dir.glob("*"))
+    dir_list = {fp.name for fp in job_dir.glob("*")}
     assert "turbine.json" not in dir_list
     config_gen = ConfigType.JSON.load(job_dir / "config_gen.json")
     config_col = ConfigType.JSON.load(job_dir / "config_collect.json")
@@ -438,19 +432,19 @@ def test_batch_job_run(typical_batch_config, monkeypatch):
     def _test_call(config, monitor, *__, **___):
         assert not monitor
         config_cache.append(config)
-        working_dirs.append(os.getcwd())
+        working_dirs.append(Path.cwd())
 
     monkeypatch.setattr(
         gaps.pipeline.Pipeline, "run", _test_call, raising=True
     )
 
-    cwd = os.getcwd()
+    cwd = Path.cwd()
     BatchJob(typical_batch_config).run()
     assert len(config_cache) == 9
-    assert set(fp.name for fp in config_cache) == {"config_pipeline.json"}
-    assert len(set(fp.parent for fp in config_cache)) == 9
+    assert {fp.name for fp in config_cache} == {"config_pipeline.json"}
+    assert len({fp.parent for fp in config_cache}) == 9
     assert len(set(working_dirs)) == 9
-    assert cwd == os.getcwd()
+    assert cwd == Path.cwd()
 
     BatchJob(typical_batch_config).delete()
     count_2 = len(list(batch_dir.glob("*")))
@@ -470,8 +464,8 @@ def test_batch_job_run(typical_batch_config, monkeypatch):
 
     BatchJob(typical_batch_config).run(monitor_background=True)
     assert len(monitor_cache) == 9
-    assert set(fp.name for fp in monitor_cache) == {"config_pipeline.json"}
-    assert len(set(fp.parent for fp in monitor_cache)) == 9
+    assert {fp.name for fp in monitor_cache} == {"config_pipeline.json"}
+    assert len({fp.parent for fp in monitor_cache}) == 9
 
     cancel_cache = []
 
@@ -488,8 +482,8 @@ def test_batch_job_run(typical_batch_config, monkeypatch):
     BatchJob(typical_batch_config).cancel()
 
     assert len(cancel_cache) == 8
-    assert set(fp.name for fp in cancel_cache) == {"config_pipeline.json"}
-    assert len(set(fp.parent for fp in cancel_cache)) == 8
+    assert {fp.name for fp in cancel_cache} == {"config_pipeline.json"}
+    assert len({fp.parent for fp in cancel_cache}) == 8
 
     monkeypatch.setattr(
         gaps.batch.BatchJob, "_make_job_dirs", lambda *__: None, raising=True
@@ -532,18 +526,30 @@ def test_batch_csv_config(csv_batch_config):
     sets = config["sets"]
     assert len(sets) == len(table)
     for _, row in table.iterrows():
-        row = row.to_dict()
-        set_tag = row["set_tag"]
+        row_dict = row.to_dict()
+        set_tag = row_dict["set_tag"]
         found = False
         for job_set in sets:
             if job_set["set_tag"] == set_tag:
                 found = True
-                for key, val in row.items():
-                    if key not in ("set_tag", "files", "pipeline_config"):
+                for key, val in row_dict.items():
+                    if key not in {"set_tag", "files", "pipeline_config"}:
                         assert [val] == job_set["args"][key]
                 break
 
         assert found
+
+
+def test_batch_csv_config_ignores_empty_rows(csv_batch_config):
+    """Test that empty rows are removed before batch CSV validation."""
+    table = pd.read_csv(csv_batch_config)
+    empty_row = "," * (len(table.columns) - 1)
+    with csv_batch_config.open("a") as config_file:
+        config_file.write(f"{empty_row}\n{empty_row}\n")
+
+    __, config = _load_batch_config(csv_batch_config)
+
+    assert len(config["sets"]) == len(table)
 
 
 # pylint: disable=no-member
@@ -558,12 +564,12 @@ def test_batch_csv_setup(csv_batch_config):
 
     BatchJob(csv_batch_config).run(dry_run=True)
 
-    dirs = set(fp.name for fp in batch_dir.glob("*"))
+    dirs = {fp.name for fp in batch_dir.glob("*")}
     count_1 = len(dirs)
     assert (count_1 - count_0) == len(config_table) + 1
 
     job_table = pd.read_csv(batch_dir / "batch_jobs.csv", index_col=0)
-    for job in job_table.index.values:
+    for job in job_table.index.to_numpy():
         assert job in dirs
 
     job_table.index.name = "index"
@@ -577,7 +583,7 @@ def test_batch_csv_setup(csv_batch_config):
 
     # test that the dict was input properly
     fp_agg = batch_dir / "blanket_cf0_sd0" / "config_aggregation.json"
-    with open(fp_agg, "r") as config_file:
+    with fp_agg.open("r") as config_file:
         config_agg = json.load(config_file)
     arg = config_agg["data_layers"]["big_brown_bat"]
     assert isinstance(arg, dict)
@@ -585,7 +591,7 @@ def test_batch_csv_setup(csv_batch_config):
     assert arg["method"] == "sum"
 
     fp_agg = batch_dir / "no_curtailment_sd2" / "config_aggregation.json"
-    with open(fp_agg, "r") as config_file:
+    with fp_agg.open("r") as config_file:
         config_agg = json.load(config_file)
     arg = config_agg["data_layers"]["big_brown_bat"]
     assert isinstance(arg, dict)
@@ -593,7 +599,7 @@ def test_batch_csv_setup(csv_batch_config):
 
     # test that the list was input properly
     fp_agg = batch_dir / "no_curtailment_sd0" / "config_aggregation.json"
-    with open(fp_agg, "r") as config_file:
+    with fp_agg.open("r") as config_file:
         config_agg = json.load(config_file)
     arg = config_agg["data_layers"]["big_brown_bat"]
     assert isinstance(arg, list)
@@ -605,7 +611,7 @@ def test_batch_csv_setup(csv_batch_config):
     assert arg[2] == 0
 
     fp_agg = batch_dir / "no_curtailment_sd1" / "config_aggregation.json"
-    with open(fp_agg, "r") as config_file:
+    with fp_agg.open("r") as config_file:
         config_agg = json.load(config_file)
     arg = config_agg["data_layers"]["big_brown_bat"]
     assert isinstance(arg, list)
@@ -618,14 +624,13 @@ def test_batch_csv_setup(csv_batch_config):
 
 @pytest.mark.parametrize("typical_batch_config", (True, False), indirect=True)
 def test_bad_str_arg(typical_batch_config):
-    """Test that a string in a batch argument will raise an error (argument
-    parameterizations should be lists)"""
+    """Test that a string in a batch argument will raise an error"""
 
     batch_dir = typical_batch_config.parent
 
     config = ConfigType.JSON.load(typical_batch_config)
     config["sets"][0]["args"]["project_points"] = "bad_str"
-    with open(typical_batch_config, "w") as f:
+    with Path(typical_batch_config).open("w", encoding="utf-8") as f:
         ConfigType.JSON.dump(config, f)
 
     count_0 = len(list(batch_dir.glob("*")))
