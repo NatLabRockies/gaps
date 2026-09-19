@@ -6,10 +6,10 @@ Welcome to Geospatial Analysis Pipelines (GAPs)!
 |PyPi| |PythonV| |Ruff| |Pixi|
 |License| |SWR|
 
-.. |Docs| image:: https://github.com/NatLabRockies/gaps/workflows/Documentation/badge.svg
+.. |Docs| image:: https://github.com/NatLabRockies/gaps/actions/workflows/docs.yml/badge.svg
     :target: https://natlabrockies.github.io/gaps/
 
-.. |Tests| image:: https://github.com/NatLabRockies/gaps/workflows/Pytests/badge.svg
+.. |Tests| image:: https://github.com/NatLabRockies/gaps/actions/workflows/pixi_tests.yml/badge.svg
     :target: https://github.com/NatLabRockies/gaps/actions?query=workflow%3A%22Pytests%22
 
 .. |Linter| image:: https://github.com/NatLabRockies/gaps/workflows/Lint%20Code%20Base/badge.svg
