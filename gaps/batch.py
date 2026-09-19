@@ -31,7 +31,7 @@ from gaps.warn import gapsWarning
 logger = logging.getLogger(__name__)
 
 _TOO_MANY_JOBS_WARNING_THRESH = 1_000
-_LARGE_COPY_WARNING_THRESH = 1024**3  # 1GB
+_LARGE_COPY_WARNING_THRESH = 5 * 1024**3  # 5GB
 _COPY_OPTIONS = ("all", "config")
 BATCH_CSV_FN = "batch_jobs.csv"
 BatchSet = namedtuple("BatchSet", ["arg_combo", "file_set", "tag"])
