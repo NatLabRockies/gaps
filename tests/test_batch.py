@@ -463,6 +463,49 @@ def test_batch_job_setup_copies_config_files_only(typical_batch_config):
     }
 
 
+@pytest.mark.parametrize("copy_option", ["all", "config"])
+@pytest.mark.parametrize("typical_batch_config", (False,), indirect=True)
+def test_batch_job_does_not_copy_status_or_logs(
+    typical_batch_config, copy_option
+):
+    """Test status and log directories are excluded from batch copies."""
+    batch_dir = typical_batch_config.parent
+    batch_config = ConfigType.JSON.load(typical_batch_config)
+    batch_config["copy"] = copy_option
+    ConfigType.JSON.write(typical_batch_config, batch_config)
+
+    pipeline_config_path = batch_dir / "config_pipeline.json"
+    pipeline_config = ConfigType.JSON.load(pipeline_config_path)
+    pipeline_config["logging"]["log_file"] = "./pipeline_logs/gaps.log"
+    ConfigType.JSON.write(pipeline_config_path, pipeline_config)
+
+    status_file = batch_dir / ".gaps" / "status.json"
+    status_file.parent.mkdir()
+    status_file.touch()
+    pipeline_log = batch_dir / "pipeline_logs" / "previous.log"
+    pipeline_log.parent.mkdir()
+    pipeline_log.touch()
+    command_log = batch_dir / "command_logs" / "previous.log"
+    command_log.parent.mkdir()
+    command_log.touch()
+
+    generation_config_path = batch_dir / "config_gen.json"
+    generation_config = ConfigType.JSON.load(generation_config_path)
+    generation_config["log_directory"] = "./command_logs"
+    generation_config["status_file"] = "./.gaps/status.json"
+    generation_config["pipeline_log"] = "./pipeline_logs/previous.log"
+    generation_config["command_log"] = "./command_logs/previous.log"
+    ConfigType.JSON.write(generation_config_path, generation_config)
+
+    batch_job = BatchJob(typical_batch_config)
+    batch_job.run(dry_run=True)
+
+    for job_dir in batch_job._batch_info.sub_dirs:
+        assert not (job_dir / ".gaps").exists()
+        assert not (job_dir / "pipeline_logs").exists()
+        assert not (job_dir / "command_logs").exists()
+
+
 @pytest.mark.parametrize("typical_batch_config", (False,), indirect=True)
 def test_batch_job_warns_for_large_recursive_copy(
     typical_batch_config, monkeypatch
