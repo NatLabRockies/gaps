@@ -310,6 +310,11 @@ def _convert_batch_table_to_dict(table):
         }
         sets.append(set_config)
 
+    copy_options = table.get("copy", pd.Series(dtype=object)).dropna().unique()
+    if len(copy_options) > 1:
+        msg = 'Batch CSV config must use the same "copy" option in every row.'
+        raise gapsConfigError(msg)
+
     return {
         "logging": {"log_file": None, "log_level": "INFO"},
         "pipeline_config": table["pipeline_config"].to_numpy()[0],
