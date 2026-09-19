@@ -472,6 +472,55 @@ def test_run_local(
     assert outputs["job_name"] == f"{tmp_path.name}_run{outputs['tag']}"
 
 
+def test_run_local_with_inherited_config(test_ctx, runnable_script, caplog):
+    """Test resolving inheritance before validation and preprocessing."""
+    tmp_path = test_ctx.obj["TMP_PATH"]
+    parent_config = {
+        "execution_control": {"max_workers": 1},
+        "input1": 1,
+        "input3": "parent",
+        "project_points": [0, 1],
+        "pool_size": 99,
+    }
+    parent_file = tmp_path / "parent.json"
+    child_file = tmp_path / "child.json"
+    parent_file.write_text(json.dumps(parent_config), encoding="utf-8")
+    child_file.write_text(
+        json.dumps(
+            {
+                "inherit_from": parent_file.name,
+                "input1": 2,
+                "pool_size": "DELETE",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def pre_processing(config):
+        assert config["input1"] == 2
+        assert config["input3"] == "parent"
+        assert "pool_size" not in config
+        assert "inherit_from" not in config
+        return config
+
+    command_config = CLICommandFromFunction(
+        _testing_function,
+        name="run",
+        config_preprocessor=pre_processing,
+    )
+
+    from_config(child_file, command_config)
+
+    outputs = json.loads((tmp_path / "out.json").read_text(encoding="utf-8"))
+    assert outputs["input1"] == 2
+    assert outputs["input3"] == "parent"
+    assert outputs["pool_size"] == 16
+    assert not any(
+        "inherit_from" in record.message or "DELETE" in record.message
+        for record in caplog.records
+    )
+
+
 @pytest.mark.parametrize(
     "option", ["eagle", "EAGLE", "Eagle", "EaGlE", "kestrel", "KESTREL"]
 )
