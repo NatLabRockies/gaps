@@ -108,6 +108,30 @@ For more information on getting started, see the
 The general structure of the {name} CLI is given below.
 """
 
+CONFIG_INHERITANCE_DOC = """
+Configuration inheritance
+-------------------------
+JSON, JSON5, YAML, and TOML configurations may set ``inherit_from`` to the
+path of another configuration file. GAPs loads inheritance recursively and
+deep-merges dictionaries, with values in the current file taking precedence.
+Lists, scalar values, ``null``, and values that change type replace the
+inherited value. Parent references and other relative paths are resolved from
+the file in which they are defined.
+
+Set a key to the exact, case-sensitive string ``"DELETE"`` in an inheriting
+file to remove that key from the effective configuration. This works at any
+dictionary depth. For example::
+
+        inherit_from: base.yaml
+        logging:
+            log_file: DELETE
+
+The ``inherit_from`` key and deleted entries are removed before config
+validation and preprocessing. The value ``"DELETE"`` is therefore reserved
+in inheriting files. CSV batch configurations do not support inheritance.
+
+"""
+
 PIPELINE_CONFIG_DOC = """
 Path to the ``pipeline`` configuration file. This argument can be
 left out, but *one and only one file* with "pipeline" in the
@@ -147,6 +171,7 @@ logging : dict, optional
     config for the step of the pipeline being executed.
 
 """
+PIPELINE_CONFIG_DOC += CONFIG_INHERITANCE_DOC
 
 BATCH_CONFIG_DOC = """
 Path to the ``batch`` configuration file. {sample_config}
@@ -203,6 +228,7 @@ sets : list of dicts
             concatenation.
 
 """
+BATCH_CONFIG_DOC += CONFIG_INHERITANCE_DOC
 
 _BATCH_ARGS_DICT = """.. tabs::
 
@@ -262,8 +288,10 @@ Path to the ``{name}`` configuration file. {sample_config}
 
 {docstring}
 
-Note that you may remove any keys with a ``null`` value if you do not intend to update them yourself.
-"""  # ruff:ignore[line-too-long]
+You may remove keys with a ``null`` value if you do not intend to update
+them yourself.
+"""
+CONFIG_DOC += CONFIG_INHERITANCE_DOC
 SAMPLE_CONFIG_DOC = """Below is a sample template config
 
 .. tabs::
