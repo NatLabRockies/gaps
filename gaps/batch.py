@@ -510,17 +510,6 @@ def _resolve_path(path, base_dir):
     return path.resolve()
 
 
-def _enumerated_product(args):
-    """An enumerated product function"""
-    return list(
-        zip(
-            product(*(range(len(x)) for x in args)),
-            product(*args),
-            strict=False,
-        )
-    )
-
-
 def _parse_config(config):
     """Parse batch config object for useful data"""
 
@@ -555,6 +544,17 @@ def _parse_config(config):
             )
 
     return batch_sets
+
+
+def _enumerated_product(args):
+    """An enumerated product function"""
+    return list(
+        zip(
+            product(*(range(len(x)) for x in args)),
+            product(*args),
+            strict=False,
+        )
+    )
 
 
 def _validate_batch_set(set_tag, args, sets):
