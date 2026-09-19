@@ -12,6 +12,7 @@ from warnings import warn
 from pathlib import Path
 from itertools import product
 from collections import namedtuple
+from functools import cached_property
 
 import pandas as pd
 
@@ -20,6 +21,7 @@ from rex.utilities import parse_year
 import gaps.cli.pipeline
 from gaps.config import load_config, ConfigType, resolve_all_paths
 from gaps.pipeline import Pipeline, PipelineStep
+from gaps.status import Status
 from gaps.exceptions import (
     gapsValueError,
     gapsConfigError,
@@ -35,6 +37,234 @@ _LARGE_COPY_WARNING_THRESH = 5 * 1024**3  # 5GB
 _COPY_OPTIONS = ("all", "config")
 BATCH_CSV_FN = "batch_jobs.csv"
 BatchSet = namedtuple("BatchSet", ["arg_combo", "file_set", "tag"])
+
+
+class BatchInfo:
+    """Batch configuration and metadata"""
+
+    def __init__(self, config):
+        """
+
+        Parameters
+        ----------
+        config : dict or str or Path
+            The batch configuration object or path to the configuration
+            file.
+        """
+        self.base_dir, config = _load_batch_config(config)
+        self.pipeline_fp = Path(config["pipeline_config"])
+        self.copy_option = config["copy"]
+        self.sets = _parse_config(config)
+
+    @property
+    def sub_dirs(self):
+        """list: Job sub directory paths"""
+        return [self.base_dir / tag for tag in self.sets]
+
+    @cached_property
+    def pipeline_step_config_files(self):
+        """set: Config files for each of the defined pipeline steps"""
+        return {
+            _resolve_path(step.config_path, self.pipeline_fp.parent)
+            for step in map(PipelineStep, self._pipeline_config["pipeline"])
+        }
+
+    @cached_property
+    def _pipeline_config(self):
+        """dict: Loaded pipeline configuration object"""
+        return load_config(self.pipeline_fp, resolve_paths=False)
+
+    @cached_property
+    def _excluded_copy_dirs(self):
+        """set: Configured log directories within the batch directory"""
+        log_dirs = set()
+        logging_config = self._pipeline_config.get("logging", {})
+        log_file = logging_config.get("file") or logging_config.get("log_file")
+        if log_file:
+            log_dirs.add(
+                _resolve_path(log_file, self.pipeline_fp.parent).parent
+            )
+
+        for config_file in self.pipeline_step_config_files:
+            if not config_file.is_file():
+                continue
+            config = load_config(config_file, resolve_paths=False)
+            log_dir = config.get("log_directory", config_file.parent / "logs")
+            if log_dir:
+                log_dirs.add(_resolve_path(log_dir, config_file.parent))
+
+        return {
+            directory
+            for directory in log_dirs
+            if directory != self.base_dir
+            and directory.is_relative_to(self.base_dir)
+        }
+
+    def is_excluded_copy_path(self, path):
+        """Check whether a path belongs to an excluded directory
+
+        Parameters
+        ----------
+        path : str or Path
+            The path to check.
+
+        Returns
+        -------
+        bool
+            ``True`` if the path is within an excluded copy directory,
+            ``False`` otherwise.
+        """
+        path = Path(path).resolve()
+        relative_path = path.relative_to(self.base_dir)
+        if Status.HIDDEN_SUB_DIR in relative_path.parts:
+            return True
+
+        return any(
+            path == directory or path.is_relative_to(directory)
+            for directory in self._excluded_copy_dirs
+        )
+
+
+class BatchFilesToCopyFromConfigs:
+    """Iterator for files to copy based on batch and pipeline configs"""
+
+    def __init__(self, batch_info):
+        """
+
+        Parameters
+        ----------
+        batch_info : BatchInfo
+            The batch information object.
+        """
+        self._batch_info = batch_info
+
+    def __iter__(self):
+        """Get files referenced by pipeline and batch configurations"""
+        files = self._batch_set_files()
+        files.update(self._batch_info.pipeline_step_config_files)
+
+        for config_file in self._batch_info.pipeline_step_config_files:
+            files.update(self._files_from_pipeline_step_config(config_file))
+
+        files = {
+            path
+            for path in files
+            if (
+                path.is_file()
+                and path.is_relative_to(self._batch_info.base_dir)
+                and not self._batch_info.is_excluded_copy_path(path)
+            )
+        }
+        for source_dir in sorted({path.parent for path in files}):
+            filenames = sorted(
+                path.name for path in files if path.parent == source_dir
+            )
+            yield source_dir, filenames
+
+    def _batch_set_files(self):
+        """Files referenced by the batch set"""
+        files = {
+            Path(file_path)
+            for batch_set in self._batch_info.sets.values()
+            for file_path in batch_set.file_set
+        }
+        for batch_set in self._batch_info.sets.values():
+            arg_combo = {
+                key: _clean_arg(value)
+                for key, value in batch_set.arg_combo.items()
+            }
+            files.update(
+                _find_local_files(
+                    arg_combo,
+                    base_dir=self._batch_info.base_dir,
+                    root_dir=self._batch_info.base_dir,
+                )
+            )
+        return files
+
+    def _files_from_pipeline_step_config(self, config_file):
+        """Files referenced by a single pipeline step config file"""
+        config = load_config(config_file, resolve_paths=False)
+        return _find_local_files(
+            config,
+            base_dir=config_file.parent,
+            root_dir=self._batch_info.base_dir,
+        )
+
+
+class BatchFilesToCopyFromSourceDir:
+    """Iterator for files to copy from the source dir"""
+
+    def __init__(self, batch_info):
+        """
+
+        Parameters
+        ----------
+        batch_info : BatchInfo
+            The batch information object.
+        """
+        self._batch_info = batch_info
+        self._projected_copy_size = 0
+        self._large_copy_warning_issued = False
+
+    def __iter__(self):
+        """Get all files from source dir to copy"""
+        for source_dir, filenames in self._walk_base_dir():
+            logger.debug("Processing files in : %s", source_dir)
+            logger.debug(
+                "    - Is dupe dir: %s",
+                any(
+                    job_tag in str(source_dir)
+                    for job_tag in self._batch_info.sets
+                ),
+            )
+
+            # don't make additional copies of job sub directories.
+            if any(
+                job_tag in str(source_dir) for job_tag in self._batch_info.sets
+            ):
+                continue
+
+            self._add_to_copy_size_estimate(source_dir, filenames)
+            self._warn_about_copy_size_if_needed()
+            yield Path(source_dir), filenames
+
+    def _walk_base_dir(self):
+        """Walk through the base dir, yielding source dirs/files"""
+        for source_dir_str, dirnames, filenames in os.walk(
+            self._batch_info.base_dir, topdown=True
+        ):
+            source_dir = Path(source_dir_str)
+            dirnames[:] = [
+                dirname
+                for dirname in dirnames
+                if not self._batch_info.is_excluded_copy_path(
+                    source_dir / dirname
+                )
+            ]
+            yield source_dir, filenames
+
+    def _add_to_copy_size_estimate(self, source_dir, filenames):
+        """Add the size of the files to the projected copy size"""
+        self._projected_copy_size += len(self._batch_info.sets) * sum(
+            (Path(source_dir) / filename).stat().st_size
+            for filename in filenames
+        )
+
+    def _warn_about_copy_size_if_needed(self):
+        """Warn if the projected copy size exceeds the threshold"""
+        if (
+            self._projected_copy_size > _LARGE_COPY_WARNING_THRESH
+            and not self._large_copy_warning_issued
+        ):
+            msg = (
+                "Batch is recursively copying more than 1 GiB of data "
+                f"across {len(self._batch_info.sets):,} job directories. "
+                'Consider using "copy": "config" to restrict copies to '
+                "files referenced by the run configuration."
+            )
+            warn(msg, gapsWarning)
+            self._large_copy_warning_issued = True
 
 
 class BatchJob:
@@ -55,20 +285,18 @@ class BatchJob:
         config : str
             File path to config json or csv (str).
         """
-
         self._job_tags = None
-        self._base_dir, config = _load_batch_config(config)
-        self._pipeline_fp = Path(config["pipeline_config"])
-        self._copy_option = config["copy"]
-        self._sets = _parse_config(config)
-
-        logger.info("Batch job initialized with %d sub jobs.", len(self._sets))
+        self._batch_info = BatchInfo(config)
+        logger.info(
+            "Batch job initialized with %d sub jobs.",
+            len(self._batch_info.sets),
+        )
 
     @property
     def job_table(self):
         """pandas.DataFrame: Batch job summary table"""
         jobs = []
-        for job_tag, (arg_comb, file_set, set_tag) in self._sets.items():
+        for job_tag, arg_comb, file_set, set_tag in self._sets_iter():
             job_info = {k: str(v) for k, v in arg_comb.items()}
             job_info["set_tag"] = str(set_tag)
             job_info["files"] = str(file_set)
@@ -78,24 +306,27 @@ class BatchJob:
         table = pd.concat(jobs)
 
         table.index.name = "job"
-        table["pipeline_config"] = self._pipeline_fp.as_posix()
+        table["pipeline_config"] = self._batch_info.pipeline_fp.as_posix()
 
         return table
 
-    @property
-    def sub_dirs(self):
-        """list: Job sub directory paths"""
-        return [self._base_dir / tag for tag in self._sets]
+    def _sets_iter(self):
+        """Iterator over batch sets"""
+        for job_tag, set_info in self._batch_info.sets.items():
+            arg_comb, file_set, set_tag = set_info
+            yield job_tag, arg_comb, file_set, set_tag
 
     def _make_job_dirs(self):
         """Copy job files from the batch config dir into sub job dirs"""
 
         table = self.job_table
-        table.to_csv(self._base_dir / BATCH_CSV_FN)
+        table.to_csv(self._batch_info.base_dir / BATCH_CSV_FN)
         logger.debug(
             "Batch jobs list: %s", sorted(table.index.to_numpy().tolist())
         )
-        logger.debug("Using the following batch sets: %s", self._sets)
+        logger.debug(
+            "Using the following batch sets: %s", self._batch_info.sets
+        )
         logger.info("Preparing batch job directories...")
 
         self._prepare_batch_sub_directories()
@@ -110,110 +341,17 @@ class BatchJob:
 
     def _files_to_copy(self):
         """Get all source files/directories to copy"""
-        if self._copy_option == "config":
-            file_generator = self._config_files_to_copy()
+        if self._batch_info.copy_option == "config":
+            file_generator = BatchFilesToCopyFromConfigs(self._batch_info)
         else:
-            file_generator = self._source_dir_files_to_copy()
+            file_generator = BatchFilesToCopyFromSourceDir(self._batch_info)
 
         yield from file_generator
-
-    def _config_files_to_copy(self):
-        """Get files referenced by pipeline and batch configurations"""
-        files = self._batch_set_files()
-
-        pipeline_files = self._pipeline_step_config_files()
-        files.update(pipeline_files)
-
-        for config_file in pipeline_files:
-            files.update(self._files_from_pipeline_step_config(config_file))
-
-        files = {
-            path
-            for path in files
-            if path.is_file() and path.is_relative_to(self._base_dir)
-        }
-        for source_dir in sorted({path.parent for path in files}):
-            filenames = sorted(
-                path.name for path in files if path.parent == source_dir
-            )
-            yield source_dir, filenames
-
-    def _batch_set_files(self):
-        """Files referenced by the batch set"""
-        files = {
-            Path(file_path)
-            for batch_set in self._sets.values()
-            for file_path in batch_set.file_set
-        }
-        for batch_set in self._sets.values():
-            arg_combo = {
-                key: _clean_arg(value)
-                for key, value in batch_set.arg_combo.items()
-            }
-            files.update(
-                _find_local_files(
-                    arg_combo,
-                    base_dir=self._base_dir,
-                    root_dir=self._base_dir,
-                )
-            )
-        return files
-
-    def _pipeline_step_config_files(self):
-        """Config files for each of the defined pipeline steps"""
-        pipeline_config = load_config(self._pipeline_fp, resolve_paths=False)
-        return {
-            _resolve_path(step.config_path, self._pipeline_fp.parent)
-            for step in map(PipelineStep, pipeline_config["pipeline"])
-        }
-
-    def _files_from_pipeline_step_config(self, config_file):
-        """Files referenced by a single pipeline step config file"""
-        config = load_config(config_file, resolve_paths=False)
-        return _find_local_files(
-            config,
-            base_dir=config_file.parent,
-            root_dir=self._base_dir,
-        )
-
-    def _source_dir_files_to_copy(self):
-        """Get all files from source dir to copy"""
-        projected_copy_size = 0
-        large_copy_warning_issued = False
-        for source_dir, _, filenames in os.walk(self._base_dir):
-            logger.debug("Processing files in : %s", source_dir)
-            logger.debug(
-                "    - Is dupe dir: %s",
-                any(job_tag in source_dir for job_tag in self._sets),
-            )
-
-            # don't make additional copies of job sub directories.
-            if any(job_tag in source_dir for job_tag in self._sets):
-                continue
-
-            projected_copy_size += len(self._sets) * sum(
-                (Path(source_dir) / filename).stat().st_size
-                for filename in filenames
-            )
-            if (
-                projected_copy_size > _LARGE_COPY_WARNING_THRESH
-                and not large_copy_warning_issued
-            ):
-                msg = (
-                    "Batch is recursively copying more than 1 GiB of data "
-                    f"across {len(self._sets):,} job directories. Consider "
-                    'using "copy": "config" to restrict copies to files '
-                    "referenced by the run configuration."
-                )
-                warn(msg, gapsWarning)
-                large_copy_warning_issued = True
-
-            yield Path(source_dir), filenames
 
     def _prepare_batch_set_sub_directories(self, source_dir, filenames):
         """Prepare all batch set sub-directories"""
         # For each dir level, iterate through the batch arg combos
-        for tag, (arg_comb, mod_files, __) in self._sets.items():
+        for tag, arg_comb, mod_files, __ in self._sets_iter():
             # This will copy config subdirs into the job subdirs
             destination_dir = self._prepare_batch_set_destination_dir(
                 tag, source_dir
@@ -227,7 +365,9 @@ class BatchJob:
         """Prepare a single batch set sub-directory"""
         # Add the job tag to the directory path.
         destination_dir = (
-            self._base_dir / tag / source_dir.relative_to(self._base_dir)
+            self._batch_info.base_dir
+            / tag
+            / source_dir.relative_to(self._batch_info.base_dir)
         )
         logger.debug("Creating dir: %s", destination_dir)
         destination_dir.mkdir(parents=True, exist_ok=True)
@@ -235,24 +375,28 @@ class BatchJob:
 
     def _copy_pipeline_files(self):
         """Copy pipeline file to all of the batch job sub-directories"""
-        for tag in self._sets:
-            destination_dir = self._base_dir / tag
+        for tag in self._batch_info.sets:
+            destination_dir = self._batch_info.base_dir / tag
             pipeline_file_target = (
-                destination_dir / self._pipeline_fp.relative_to(self._base_dir)
+                destination_dir
+                / self._batch_info.pipeline_fp.relative_to(
+                    self._batch_info.base_dir
+                )
             )
             pipeline_file_target.parent.mkdir(parents=True, exist_ok=True)
             _copy_batch_file(
-                self._pipeline_fp,
+                self._batch_info.pipeline_fp,
                 destination_dir
-                / self._pipeline_fp.relative_to(self._base_dir),
+                / self._batch_info.pipeline_fp.relative_to(
+                    self._batch_info.base_dir
+                ),
             )
 
     def _run_pipelines(self, monitor_background=False):
         """Run the pipeline modules for each batch job"""
-
-        for sub_directory in self.sub_dirs:
+        for sub_directory in self._batch_info.sub_dirs:
             os.chdir(sub_directory)
-            pipeline_config = sub_directory / self._pipeline_fp.name
+            pipeline_config = sub_directory / self._batch_info.pipeline_fp.name
             if not pipeline_config.is_file():
                 msg = (
                     f"Could not find pipeline config to run: "
@@ -271,8 +415,8 @@ class BatchJob:
 
     def cancel(self):
         """Cancel all pipeline modules for all batch jobs"""
-        for sub_directory in self.sub_dirs:
-            pipeline_config = sub_directory / self._pipeline_fp.name
+        for sub_directory in self._batch_info.sub_dirs:
+            pipeline_config = sub_directory / self._batch_info.pipeline_fp.name
             if pipeline_config.is_file():
                 Pipeline.cancel_all(pipeline_config)
 
@@ -283,7 +427,7 @@ class BatchJob:
         in the batch config directory are deleted.
         """
 
-        fp_job_table = self._base_dir / BATCH_CSV_FN
+        fp_job_table = self._batch_info.base_dir / BATCH_CSV_FN
         if not fp_job_table.exists():
             msg = (
                 f"Cannot delete batch jobs without jobs summary table: "
@@ -306,7 +450,7 @@ class BatchJob:
     def _remove_sub_dirs(self, job_table):
         """Remove all the sub-directories tracked in the job table"""
         for sub_dir in job_table.index:
-            job_dir = self._base_dir / sub_dir
+            job_dir = self._batch_info.base_dir / sub_dir
             if job_dir.exists():
                 logger.info("Removing batch job directory: %r", sub_dir)
                 shutil.rmtree(job_dir)
