@@ -29,6 +29,7 @@ import gaps.batch
 import gaps.cli.pipeline
 from gaps.config import ConfigType
 from gaps.exceptions import gapsValueError, gapsConfigError
+from gaps.warn import gapsWarning
 
 
 @pytest.fixture
@@ -460,6 +461,22 @@ def test_batch_job_setup_copies_config_files_only(typical_batch_config):
         "project_points/project_points_test.csv",
         "sam_configs/turbine.json",
     }
+
+
+@pytest.mark.parametrize("typical_batch_config", (False,), indirect=True)
+def test_batch_job_warns_for_large_recursive_copy(
+    typical_batch_config, monkeypatch
+):
+    """Test warning when recursively copying substantial data."""
+
+    monkeypatch.setattr(gaps.batch, "_LARGE_COPY_WARNING_THRESH", 1)
+
+    with pytest.warns(
+        gapsWarning, match=r'recursively copying.*"config"'
+    ) as w:
+        BatchJob(typical_batch_config).run(dry_run=True)
+
+    assert len(w) == 1
 
 
 @pytest.mark.parametrize("typical_batch_config", (True, False), indirect=True)
