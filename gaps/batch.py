@@ -58,7 +58,7 @@ class BatchJob:
         self._job_tags = None
         self._base_dir, config = _load_batch_config(config)
         self._pipeline_fp = Path(config["pipeline_config"])
-        self._copy_option = config["all"]
+        self._copy_option = config["copy"]
         self._sets = _parse_config(config)
 
         logger.info("Batch job initialized with %d sub jobs.", len(self._sets))
@@ -109,7 +109,61 @@ class BatchJob:
 
     def _files_to_copy(self):
         """Get all source files/directories to copy"""
-        # walk through current directory getting everything to copy
+        if self._copy_option == "config":
+            file_generator = self._config_files_to_copy()
+        else:
+            file_generator = self._source_dir_files_to_copy()
+
+        yield from file_generator
+
+    def _config_files_to_copy(self):
+        """Get files referenced by pipeline and batch configurations"""
+        files = self._batch_set_files()
+
+        pipeline_files = self._pipeline_step_config_files()
+        files.update(pipeline_files)
+
+        for config_file in pipeline_files:
+            files.update(self._files_from_pipeline_step_config(config_file))
+
+        files = {
+            path
+            for path in files
+            if path.is_file() and path.is_relative_to(self._base_dir)
+        }
+        for source_dir in sorted({path.parent for path in files}):
+            filenames = sorted(
+                path.name for path in files if path.parent == source_dir
+            )
+            yield source_dir, filenames
+
+    def _batch_set_files(self):
+        """Files referenced by the batch set"""
+        return {
+            Path(file_path)
+            for batch_set in self._sets.values()
+            for file_path in batch_set.file_set
+        }
+
+    def _pipeline_step_config_files(self):
+        """Config files for each of the defined pipeline steps"""
+        pipeline_config = load_config(self._pipeline_fp, resolve_paths=False)
+        return {
+            _resolve_path(step.config_path, self._pipeline_fp.parent)
+            for step in map(PipelineStep, pipeline_config["pipeline"])
+        }
+
+    def _files_from_pipeline_step_config(self, config_file):
+        """Files referenced by a single pipeline step config file"""
+        config = load_config(config_file, resolve_paths=False)
+        return _find_local_files(
+            config,
+            base_dir=config_file.parent,
+            root_dir=self._base_dir,
+        )
+
+    def _source_dir_files_to_copy(self):
+        """Get all files from source dir to copy"""
         for source_dir, _, filenames in os.walk(self._base_dir):
             logger.debug("Processing files in : %s", source_dir)
             logger.debug(
@@ -318,7 +372,7 @@ def _convert_batch_table_to_dict(table):
     return {
         "logging": {"log_file": None, "log_level": "INFO"},
         "pipeline_config": table["pipeline_config"].to_numpy()[0],
-        "copy": copy_options[0] if len(copy_options) else "all",
+        "copy": copy_options[0].casefold() if len(copy_options) else "all",
         "sets": sets,
     }
 
@@ -332,7 +386,7 @@ def _validate_batch_config(config, base_dir):
 
 def _check_copy_option(config):
     """Check the batch file copy option"""
-    copy_option = config.setdefault("copy", "all")
+    config["copy"] = copy_option = config.get("copy", "all").casefold()
     if copy_option not in _COPY_OPTIONS:
         msg = (
             f"Batch config copy option must be one of {_COPY_OPTIONS!r}, "
@@ -393,6 +447,34 @@ def _confirm_required_batch_set_structure(batch_set):
     if "files" not in batch_set:
         msg = 'All batch sets must have "files" key.'
         raise gapsConfigError(msg)
+
+
+# complexipy: ignore
+def _find_local_files(container, base_dir, root_dir):
+    """Find local files referenced in a nested config container"""
+    files = set()
+    if isinstance(container, str):
+        path = _resolve_path(container, base_dir)
+        try:
+            if path.is_file() and path.is_relative_to(root_dir):
+                files.add(path)
+        except OSError:
+            pass
+    elif isinstance(container, dict):
+        for value in container.values():
+            files.update(_find_local_files(value, base_dir, root_dir))
+    elif isinstance(container, (list, tuple)):
+        for value in container:
+            files.update(_find_local_files(value, base_dir, root_dir))
+    return files
+
+
+def _resolve_path(path, base_dir):
+    """Resolve a path relative to a configuration file directory"""
+    path = Path(path).expanduser()
+    if not path.is_absolute():
+        path = Path(base_dir) / path
+    return path.resolve()
 
 
 def _enumerated_product(args):
