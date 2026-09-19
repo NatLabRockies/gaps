@@ -139,11 +139,24 @@ class BatchJob:
 
     def _batch_set_files(self):
         """Files referenced by the batch set"""
-        return {
+        files = {
             Path(file_path)
             for batch_set in self._sets.values()
             for file_path in batch_set.file_set
         }
+        for batch_set in self._sets.values():
+            arg_combo = {
+                key: _clean_arg(value)
+                for key, value in batch_set.arg_combo.items()
+            }
+            files.update(
+                _find_local_files(
+                    arg_combo,
+                    base_dir=self._base_dir,
+                    root_dir=self._base_dir,
+                )
+            )
+        return files
 
     def _pipeline_step_config_files(self):
         """Config files for each of the defined pipeline steps"""
