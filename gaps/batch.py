@@ -295,13 +295,12 @@ def _validate_batch_table(table):
 
 def _convert_batch_table_to_dict(table):
     """Convert validated batch csv file to dict"""
+    metadata_columns = {"set_tag", "files", "pipeline_config", "copy"}
     sets = []
     for _, job in table.iterrows():
         job_dict = job.to_dict()
         args = {
-            k: [v]
-            for k, v in job_dict.items()
-            if k not in {"set_tag", "files", "pipeline_config"}
+            k: [v] for k, v in job_dict.items() if k not in metadata_columns
         }
         files = _json_load_with_cleaning(job_dict["files"])
         set_config = {
