@@ -318,6 +318,7 @@ def _convert_batch_table_to_dict(table):
     return {
         "logging": {"log_file": None, "log_level": "INFO"},
         "pipeline_config": table["pipeline_config"].to_numpy()[0],
+        "copy": copy_options[0] if len(copy_options) else "all",
         "sets": sets,
     }
 
