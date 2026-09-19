@@ -366,8 +366,8 @@ class BatchJob(gaps.batch.BatchJob):
             Flag to turn on debug logging for the pipelines.
         """
 
-        for sub_directory in self.sub_dirs:
-            pipeline_config = sub_directory / self._pipeline_fp.name
+        for sub_directory in self._batch_info.sub_dirs:
+            pipeline_config = sub_directory / self._batch_info.pipeline_fp.name
             if not pipeline_config.is_file():
                 msg = (
                     f"Could not find pipeline config to run: "
@@ -387,8 +387,8 @@ class BatchJob(gaps.batch.BatchJob):
 
     def _cancel_all(self):
         """Cancel all reV pipeline modules for all batch jobs"""
-        for sub_directory in self.sub_dirs:
-            pipeline_config = sub_directory / self._pipeline_fp.name
+        for sub_directory in self._batch_info.sub_dirs:
+            pipeline_config = sub_directory / self._batch_info.pipeline_fp.name
             if pipeline_config.is_file():
                 self.PIPELINE_CLASS.cancel_all(pipeline_config.as_posix())
 
