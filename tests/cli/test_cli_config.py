@@ -25,7 +25,8 @@ from gaps.warn import gapsWarning
 from gaps.utilities import TAG
 
 
-def _testing_function(  # noqa: PLR0913, PLR0917
+# ruff: ignore[too-many-arguments, too-many-positional-arguments]
+def _testing_function(
     project_points,
     input1,
     input3,
@@ -103,7 +104,8 @@ def _testing_function(  # noqa: PLR0913, PLR0917
     return out_fp.as_posix()
 
 
-def _testing_function_no_pp(  # noqa: PLR0913, PLR0917
+# ruff: ignore[too-many-arguments, too-many-positional-arguments]
+def _testing_function_no_pp(
     input1,
     input3,
     tag,
@@ -218,7 +220,7 @@ class TestCommand:
         self._input2 = _input2
         self._input3 = input3
 
-    def run(  # noqa: PLR0913, PLR0917
+    def run(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
         project_points,
         tag,
@@ -1240,7 +1242,7 @@ def test_run_local_multiple_out_files(test_ctx, runnable_script, test_class):
     from_config(config_fp, command_config)
     out_fns = [f"out{TAG}0.json", f"out{TAG}1.json"]
 
-    for out_fn, in3 in zip(out_fns, config["input3"]):
+    for out_fn, in3 in zip(out_fns, config["input3"], strict=False):
         expected_file = tmp_path / out_fn
         assert expected_file.exists()
         with expected_file.open("r", encoding="utf-8") as output_file:
@@ -1431,7 +1433,8 @@ def test_args_passed_to_pre_processor(
     with config_fp.open("w", encoding="utf-8") as config_file:
         json.dump(input_config, config_file)
 
-    def pre_processing(  # noqa: PLR0913, PLR0917
+    # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+    def pre_processing(
         config,
         a_value,
         a_multiplier,
