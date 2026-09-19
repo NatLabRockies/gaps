@@ -31,6 +31,7 @@ from gaps.warn import gapsWarning
 logger = logging.getLogger(__name__)
 
 _TOO_MANY_JOBS_WARNING_THRESH = 1_000
+_COPY_OPTIONS = ("all", "config")
 BATCH_CSV_FN = "batch_jobs.csv"
 BatchSet = namedtuple("BatchSet", ["arg_combo", "file_set", "tag"])
 
@@ -57,6 +58,7 @@ class BatchJob:
         self._job_tags = None
         self._base_dir, config = _load_batch_config(config)
         self._pipeline_fp = Path(config["pipeline_config"])
+        self._copy_option = config.get("copy", "all")
         self._sets = _parse_config(config)
 
         logger.info("Batch job initialized with %d sub jobs.", len(self._sets))
