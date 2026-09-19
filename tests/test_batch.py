@@ -153,6 +153,15 @@ def test_check_pipeline():
     assert "Could not find the pipeline config file" in str(exc_info)
 
 
+def test_check_copy_option():
+    """Test batch config copy option validation."""
+
+    assert _check_copy_option({})["copy"] == "all"
+    assert _check_copy_option({"copy": "config"})["copy"] == "config"
+    with pytest.raises(gapsConfigError, match="copy option must be one of"):
+        _check_copy_option({"copy": "invalid"})
+
+
 def test_check_sets():
     """Test `_check_sets`"""
     test_config = {}
