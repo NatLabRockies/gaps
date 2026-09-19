@@ -694,6 +694,7 @@ to execute for each of the 15 parameter combinations, create a batch config like
     $ cat config_batch.json
     {
         "pipeline_config": "./config_pipeline.json",
+        "copy": "config",
         "sets": [
             {
                 "args": {
@@ -708,6 +709,10 @@ to execute for each of the 15 parameter combinations, create a batch config like
 
 
 As you can see, the batch config has only two required keys: ``"pipeline_config"`` and ``"sets"``.
+The optional ``"copy"`` key controls which files are copied into each batch sub-directory. Set it to
+``"config"`` to copy the pipeline step configs, local files referenced by those configs or batch
+arguments, and files listed in each batch set. The default, ``"all"``, copies every file under the
+top-level directory.
 The ``"pipeline_config"`` key should point to the pipeline configuration file that can be used
 to execute the model once the parametric runs have been set up. The ``"sets"`` key is a list that
 defines our parametrizations. Each "set" (defined in `Custom Parametric`_) is a dictionary with
@@ -762,10 +767,9 @@ track of the parametrized sub-directories. More importantly, we see that the com
 fifteen sub-directories, each prefixed with our ``"set_tag"`` from above, and each containing a
 copy of the run configuration.
 
-.. WARNING:: ``batch`` copies *ALL* files in your top-level directory to each of the sub-directories.
-   This means large files in your top-level directory may be (unnecessarily) copied many times. Always
-   keep "static" files somewhere other than your top-level directory and generally try to limit your run
-   directory to only contain configuration files.
+.. WARNING:: The default ``"copy": "all"`` behavior copies *ALL* files in your top-level directory to
+    each sub-directory. This means large files may be copied unnecessarily many times. Use
+    ``"copy": "config"`` to restrict copies to files referenced by the run configuration.
 
 We can also verify that batch correctly updated the parameters in each sub-directory:
 

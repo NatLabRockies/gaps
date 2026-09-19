@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
-# pylint: disable=too-many-locals,too-many-statements,redefined-outer-name
-"""
-PyTest file for batch jobs.
-"""
+"""PyTest file for batch jobs"""
+
 import os
 import json
 import time
@@ -18,6 +15,7 @@ from gaps.batch import (
     BATCH_CSV_FN,
     BatchJob,
     _check_pipeline,
+    _check_copy_option,
     _check_sets,
     _clean_arg,
     _enumerated_product,
@@ -31,6 +29,7 @@ import gaps.batch
 import gaps.cli.pipeline
 from gaps.config import ConfigType
 from gaps.exceptions import gapsValueError, gapsConfigError
+from gaps.warn import gapsWarning
 
 
 @pytest.fixture
@@ -156,6 +155,15 @@ def test_check_pipeline():
     assert "Could not find the pipeline config file" in str(exc_info)
 
 
+def test_check_copy_option():
+    """Test batch config copy option validation."""
+
+    assert _check_copy_option({})["copy"] == "all"
+    assert _check_copy_option({"copy": "config"})["copy"] == "config"
+    with pytest.raises(gapsConfigError, match="copy option must be one of"):
+        _check_copy_option({"copy": "invalid"})
+
+
 def test_check_sets():
     """Test `_check_sets`"""
     test_config = {}
@@ -204,8 +212,7 @@ def test_parse_config_duplicate_set_tags():
 
 
 def test_batch_job_setup_with_yaml_files_no_sort(batch_config_with_yaml):
-    """Test the creation and deletion of a batch job directory with yaml files,
-    and ensure that the output yaml files are NOT sorted."""
+    """Test batch setup with yaml files"""
 
     batch_dir = batch_config_with_yaml.parent
     count_0 = len(list(batch_dir.glob("*")))
@@ -213,7 +220,7 @@ def test_batch_job_setup_with_yaml_files_no_sort(batch_config_with_yaml):
 
     BatchJob(batch_config_with_yaml).run(dry_run=True)
     job_dir = batch_dir / "set1_ic10_ic31"
-    with open(job_dir / "test.yaml", "r") as test_file:
+    with (job_dir / "test.yaml").open("r") as test_file:
         key_order = [line.split(":")[0] for line in test_file]
 
     correct_key_order = [
@@ -231,8 +238,7 @@ def test_batch_job_setup_with_yaml_files_no_sort(batch_config_with_yaml):
 
 
 def test_batch_job_setup_with_yaml_files(batch_config_with_yaml):
-    """Test the creation and deletion of a batch job directory with yaml files.
-    Does not test batch execution which will require slurm."""
+    """Test batch setup with yaml files"""
 
     batch_dir = batch_config_with_yaml.parent
 
@@ -243,7 +249,7 @@ def test_batch_job_setup_with_yaml_files(batch_config_with_yaml):
 
     BatchJob(batch_config_with_yaml).run(dry_run=True)
 
-    dir_list = set(fp.name for fp in batch_dir.glob("*"))
+    dir_list = {fp.name for fp in batch_dir.glob("*")}
     set1_count = len([fn for fn in dir_list if fn.startswith("set1_")])
     set2_count = len([fn for fn in dir_list if fn.startswith("ic2")])
     assert set1_count == 6
@@ -301,8 +307,7 @@ def test_invalid_mod_file_input(batch_config_with_yaml):
 
 @pytest.mark.parametrize("typical_batch_config", (True, False), indirect=True)
 def test_batch_job_setup(typical_batch_config, monkeypatch):
-    """Test the creation and deletion of a batch job directory.
-    Does not test batch execution which will require slurm."""
+    """Test batch setup"""
 
     batch_dir = typical_batch_config.parent
 
@@ -313,7 +318,7 @@ def test_batch_job_setup(typical_batch_config, monkeypatch):
 
     BatchJob(typical_batch_config).run(dry_run=True)
 
-    dir_list = set(fp.name for fp in batch_dir.glob("*"))
+    dir_list = {fp.name for fp in batch_dir.glob("*")}
     assert "turbine.json" not in dir_list
     set1_count = len([fn for fn in dir_list if fn.startswith("set1_")])
     set2_count = len([fn for fn in dir_list if fn.startswith("set2_")])
@@ -346,7 +351,7 @@ def test_batch_job_setup(typical_batch_config, monkeypatch):
 
     args = config["sets"][0]["args"]
     job_dir = batch_dir / "set1_wthh140_wtpp1"  # cspell: disable-line
-    dir_list = set(fp.name for fp in job_dir.glob("*"))
+    dir_list = {fp.name for fp in job_dir.glob("*")}
     assert "turbine.json" not in dir_list
     config_gen = ConfigType.JSON.load(job_dir / "config_gen.json")
     config_col = ConfigType.JSON.load(job_dir / "config_collect.json")
@@ -423,6 +428,101 @@ def test_batch_job_setup(typical_batch_config, monkeypatch):
     assert count_2 == count_0, "Batch did not clear all job files!"
 
 
+@pytest.mark.parametrize("typical_batch_config", (False,), indirect=True)
+def test_batch_job_setup_copies_config_files_only(typical_batch_config):
+    """Test batch setup with config-only file copying."""
+
+    batch_dir = typical_batch_config.parent
+    config = ConfigType.JSON.load(typical_batch_config)
+    config["copy"] = "config"
+    config["sets"][0]["args"]["project_points"] = [
+        "./project_points/project_points.csv"
+    ]
+    config["sets"][0]["args"]["big_brown_bat"] = [
+        "{'source': './project_points/project_points_test.csv'}"
+    ]
+    ConfigType.JSON.write(typical_batch_config, config)
+    (batch_dir / "large_unreferenced_file.h5").touch()
+
+    BatchJob(typical_batch_config).run(dry_run=True)
+
+    job_dir = batch_dir / "set1_wthh80_wtpp0"  # cspell: disable-line
+    copied_files = {
+        path.relative_to(job_dir).as_posix()
+        for path in job_dir.rglob("*")
+        if path.is_file()
+    }
+    assert copied_files == {
+        "config_aggregation.json",
+        "config_collect.json",
+        "config_gen.json",
+        "config_pipeline.json",
+        "project_points/project_points.csv",
+        "project_points/project_points_test.csv",
+        "sam_configs/turbine.json",
+    }
+
+
+@pytest.mark.parametrize("copy_option", ["all", "config"])
+@pytest.mark.parametrize("typical_batch_config", (False,), indirect=True)
+def test_batch_job_does_not_copy_status_or_logs(
+    typical_batch_config, copy_option
+):
+    """Test generated and runtime files are excluded from batch copies"""
+    batch_dir = typical_batch_config.parent
+    batch_config = ConfigType.JSON.load(typical_batch_config)
+    batch_config["copy"] = copy_option
+    ConfigType.JSON.write(typical_batch_config, batch_config)
+
+    pipeline_config_path = batch_dir / "config_pipeline.json"
+    pipeline_config = ConfigType.JSON.load(pipeline_config_path)
+    pipeline_config["logging"]["log_file"] = "./pipeline_logs/gaps.log"
+    ConfigType.JSON.write(pipeline_config_path, pipeline_config)
+
+    status_file = batch_dir / ".gaps" / "status.json"
+    status_file.parent.mkdir()
+    status_file.touch()
+    pipeline_log = batch_dir / "pipeline_logs" / "previous.log"
+    pipeline_log.parent.mkdir()
+    pipeline_log.touch()
+    command_log = batch_dir / "command_logs" / "previous.log"
+    command_log.parent.mkdir()
+    command_log.touch()
+
+    generation_config_path = batch_dir / "config_gen.json"
+    generation_config = ConfigType.JSON.load(generation_config_path)
+    generation_config["log_directory"] = "./command_logs"
+    generation_config["status_file"] = "./.gaps/status.json"
+    generation_config["pipeline_log"] = "./pipeline_logs/previous.log"
+    generation_config["command_log"] = "./command_logs/previous.log"
+    ConfigType.JSON.write(generation_config_path, generation_config)
+
+    batch_job = BatchJob(typical_batch_config)
+    batch_job.run(dry_run=True)
+
+    for job_dir in batch_job._batch_info.sub_dirs:
+        assert not (job_dir / BATCH_CSV_FN).exists()
+        assert not (job_dir / ".gaps").exists()
+        assert not (job_dir / "pipeline_logs").exists()
+        assert not (job_dir / "command_logs").exists()
+
+
+@pytest.mark.parametrize("typical_batch_config", (False,), indirect=True)
+def test_batch_job_warns_for_large_recursive_copy(
+    typical_batch_config, monkeypatch
+):
+    """Test warning when recursively copying substantial data."""
+
+    monkeypatch.setattr(gaps.batch, "_LARGE_COPY_WARNING_THRESH", 1)
+
+    with pytest.warns(
+        gapsWarning, match=r'recursively copying.*"config"'
+    ) as w:
+        BatchJob(typical_batch_config).run(dry_run=True)
+
+    assert len(w) == 1
+
+
 @pytest.mark.parametrize("typical_batch_config", (True, False), indirect=True)
 def test_batch_job_run(typical_batch_config, monkeypatch):
     """Test a batch job run."""
@@ -438,19 +538,19 @@ def test_batch_job_run(typical_batch_config, monkeypatch):
     def _test_call(config, monitor, *__, **___):
         assert not monitor
         config_cache.append(config)
-        working_dirs.append(os.getcwd())
+        working_dirs.append(Path.cwd())
 
     monkeypatch.setattr(
         gaps.pipeline.Pipeline, "run", _test_call, raising=True
     )
 
-    cwd = os.getcwd()
+    cwd = Path.cwd()
     BatchJob(typical_batch_config).run()
     assert len(config_cache) == 9
-    assert set(fp.name for fp in config_cache) == {"config_pipeline.json"}
-    assert len(set(fp.parent for fp in config_cache)) == 9
+    assert {fp.name for fp in config_cache} == {"config_pipeline.json"}
+    assert len({fp.parent for fp in config_cache}) == 9
     assert len(set(working_dirs)) == 9
-    assert cwd == os.getcwd()
+    assert cwd == Path.cwd()
 
     BatchJob(typical_batch_config).delete()
     count_2 = len(list(batch_dir.glob("*")))
@@ -470,8 +570,8 @@ def test_batch_job_run(typical_batch_config, monkeypatch):
 
     BatchJob(typical_batch_config).run(monitor_background=True)
     assert len(monitor_cache) == 9
-    assert set(fp.name for fp in monitor_cache) == {"config_pipeline.json"}
-    assert len(set(fp.parent for fp in monitor_cache)) == 9
+    assert {fp.name for fp in monitor_cache} == {"config_pipeline.json"}
+    assert len({fp.parent for fp in monitor_cache}) == 9
 
     cancel_cache = []
 
@@ -488,8 +588,8 @@ def test_batch_job_run(typical_batch_config, monkeypatch):
     BatchJob(typical_batch_config).cancel()
 
     assert len(cancel_cache) == 8
-    assert set(fp.name for fp in cancel_cache) == {"config_pipeline.json"}
-    assert len(set(fp.parent for fp in cancel_cache)) == 8
+    assert {fp.name for fp in cancel_cache} == {"config_pipeline.json"}
+    assert len({fp.parent for fp in cancel_cache}) == 8
 
     monkeypatch.setattr(
         gaps.batch.BatchJob, "_make_job_dirs", lambda *__: None, raising=True
@@ -528,22 +628,53 @@ def test_batch_csv_config(csv_batch_config):
     __, config = _load_batch_config(csv_batch_config)
     assert "logging" in config
     assert "pipeline_config" in config
+    assert config["copy"] == "all"
     assert "sets" in config
     sets = config["sets"]
     assert len(sets) == len(table)
     for _, row in table.iterrows():
-        row = row.to_dict()
-        set_tag = row["set_tag"]
+        row_dict = row.to_dict()
+        set_tag = row_dict["set_tag"]
         found = False
         for job_set in sets:
             if job_set["set_tag"] == set_tag:
                 found = True
-                for key, val in row.items():
-                    if key not in ("set_tag", "files", "pipeline_config"):
+                for key, val in row_dict.items():
+                    if key not in {"set_tag", "files", "pipeline_config"}:
                         assert [val] == job_set["args"][key]
                 break
 
         assert found
+
+
+def test_batch_csv_config_ignores_empty_rows(csv_batch_config):
+    """Test that empty rows are removed before batch CSV validation."""
+    table = pd.read_csv(csv_batch_config)
+    empty_row = "," * (len(table.columns) - 1)
+    with csv_batch_config.open("a") as config_file:
+        config_file.write(f"{empty_row}\n{empty_row}\n")
+
+    __, config = _load_batch_config(csv_batch_config)
+
+    assert len(config["sets"]) == len(table)
+
+
+def test_batch_csv_copy_option(csv_batch_config):
+    """Test the copy option in a batch CSV config."""
+
+    table = pd.read_csv(csv_batch_config)
+    table["copy"] = "config"
+    table.to_csv(csv_batch_config, index=False)
+
+    __, config = _load_batch_config(csv_batch_config)
+
+    assert config["copy"] == "config"
+    assert all("copy" not in batch_set["args"] for batch_set in config["sets"])
+
+    table.loc[0, "copy"] = "all"
+    table.to_csv(csv_batch_config, index=False)
+    with pytest.raises(gapsConfigError, match=r"same.*copy.*every row"):
+        _load_batch_config(csv_batch_config)
 
 
 # pylint: disable=no-member
@@ -558,12 +689,12 @@ def test_batch_csv_setup(csv_batch_config):
 
     BatchJob(csv_batch_config).run(dry_run=True)
 
-    dirs = set(fp.name for fp in batch_dir.glob("*"))
+    dirs = {fp.name for fp in batch_dir.glob("*")}
     count_1 = len(dirs)
     assert (count_1 - count_0) == len(config_table) + 1
 
     job_table = pd.read_csv(batch_dir / "batch_jobs.csv", index_col=0)
-    for job in job_table.index.values:
+    for job in job_table.index.to_numpy():
         assert job in dirs
 
     job_table.index.name = "index"
@@ -577,7 +708,7 @@ def test_batch_csv_setup(csv_batch_config):
 
     # test that the dict was input properly
     fp_agg = batch_dir / "blanket_cf0_sd0" / "config_aggregation.json"
-    with open(fp_agg, "r") as config_file:
+    with fp_agg.open("r") as config_file:
         config_agg = json.load(config_file)
     arg = config_agg["data_layers"]["big_brown_bat"]
     assert isinstance(arg, dict)
@@ -585,7 +716,7 @@ def test_batch_csv_setup(csv_batch_config):
     assert arg["method"] == "sum"
 
     fp_agg = batch_dir / "no_curtailment_sd2" / "config_aggregation.json"
-    with open(fp_agg, "r") as config_file:
+    with fp_agg.open("r") as config_file:
         config_agg = json.load(config_file)
     arg = config_agg["data_layers"]["big_brown_bat"]
     assert isinstance(arg, dict)
@@ -593,7 +724,7 @@ def test_batch_csv_setup(csv_batch_config):
 
     # test that the list was input properly
     fp_agg = batch_dir / "no_curtailment_sd0" / "config_aggregation.json"
-    with open(fp_agg, "r") as config_file:
+    with fp_agg.open("r") as config_file:
         config_agg = json.load(config_file)
     arg = config_agg["data_layers"]["big_brown_bat"]
     assert isinstance(arg, list)
@@ -605,7 +736,7 @@ def test_batch_csv_setup(csv_batch_config):
     assert arg[2] == 0
 
     fp_agg = batch_dir / "no_curtailment_sd1" / "config_aggregation.json"
-    with open(fp_agg, "r") as config_file:
+    with fp_agg.open("r") as config_file:
         config_agg = json.load(config_file)
     arg = config_agg["data_layers"]["big_brown_bat"]
     assert isinstance(arg, list)
@@ -618,14 +749,13 @@ def test_batch_csv_setup(csv_batch_config):
 
 @pytest.mark.parametrize("typical_batch_config", (True, False), indirect=True)
 def test_bad_str_arg(typical_batch_config):
-    """Test that a string in a batch argument will raise an error (argument
-    parameterizations should be lists)"""
+    """Test that a string in a batch argument will raise an error"""
 
     batch_dir = typical_batch_config.parent
 
     config = ConfigType.JSON.load(typical_batch_config)
     config["sets"][0]["args"]["project_points"] = "bad_str"
-    with open(typical_batch_config, "w") as f:
+    with Path(typical_batch_config).open("w", encoding="utf-8") as f:
         ConfigType.JSON.dump(config, f)
 
     count_0 = len(list(batch_dir.glob("*")))
