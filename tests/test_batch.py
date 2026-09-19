@@ -531,6 +531,7 @@ def test_batch_csv_config(csv_batch_config):
     __, config = _load_batch_config(csv_batch_config)
     assert "logging" in config
     assert "pipeline_config" in config
+    assert config["copy"] == "all"
     assert "sets" in config
     sets = config["sets"]
     assert len(sets) == len(table)
