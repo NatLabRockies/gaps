@@ -58,7 +58,7 @@ class BatchJob:
         self._job_tags = None
         self._base_dir, config = _load_batch_config(config)
         self._pipeline_fp = Path(config["pipeline_config"])
-        self._copy_option = config.get("copy", "all")
+        self._copy_option = config["all"]
         self._sets = _parse_config(config)
 
         logger.info("Batch job initialized with %d sub jobs.", len(self._sets))
@@ -320,8 +320,21 @@ def _convert_batch_table_to_dict(table):
 
 def _validate_batch_config(config, base_dir):
     """Validate the batch config dict"""
+    config = _check_copy_option(config)
     config = _check_pipeline(config, base_dir)
     return _check_sets(config, base_dir)
+
+
+def _check_copy_option(config):
+    """Check the batch file copy option"""
+    copy_option = config.setdefault("copy", "all")
+    if copy_option not in _COPY_OPTIONS:
+        msg = (
+            f"Batch config copy option must be one of {_COPY_OPTIONS!r}, "
+            f"but received {copy_option!r}."
+        )
+        raise gapsConfigError(msg)
+    return config
 
 
 def _check_pipeline(config, base_dir):
