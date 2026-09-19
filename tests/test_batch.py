@@ -562,6 +562,24 @@ def test_batch_csv_config_ignores_empty_rows(csv_batch_config):
     assert len(config["sets"]) == len(table)
 
 
+def test_batch_csv_copy_option(csv_batch_config):
+    """Test the copy option in a batch CSV config."""
+
+    table = pd.read_csv(csv_batch_config)
+    table["copy"] = "config"
+    table.to_csv(csv_batch_config, index=False)
+
+    __, config = _load_batch_config(csv_batch_config)
+
+    assert config["copy"] == "config"
+    assert all("copy" not in batch_set["args"] for batch_set in config["sets"])
+
+    table.loc[0, "copy"] = "all"
+    table.to_csv(csv_batch_config, index=False)
+    with pytest.raises(gapsConfigError, match=r"same.*copy.*every row"):
+        _load_batch_config(csv_batch_config)
+
+
 # pylint: disable=no-member
 def test_batch_csv_setup(csv_batch_config):
     """Test a batch project setup from csv config"""
