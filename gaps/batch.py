@@ -234,7 +234,7 @@ class BatchFilesToCopyFromSourceDir:
 
     def _walk_base_dir(self):
         """Walk through the base dir, yielding source dirs/files"""
-        for source_dir_str, dirnames, filenames in os.walk(
+        for source_dir_str, dirnames, discovered_filenames in os.walk(
             self._batch_info.base_dir, topdown=True
         ):
             source_dir = Path(source_dir_str)
@@ -243,6 +243,13 @@ class BatchFilesToCopyFromSourceDir:
                 for dirname in dirnames
                 if not self._batch_info.is_excluded_copy_path(
                     source_dir / dirname
+                )
+            ]
+            filenames = [
+                filename
+                for filename in discovered_filenames
+                if not self._batch_info.is_excluded_copy_path(
+                    source_dir / filename
                 )
             ]
             yield source_dir, filenames
