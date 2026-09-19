@@ -15,6 +15,7 @@ from gaps.batch import (
     BATCH_CSV_FN,
     BatchJob,
     _check_pipeline,
+    _check_copy_option,
     _check_sets,
     _clean_arg,
     _enumerated_product,
@@ -424,6 +425,41 @@ def test_batch_job_setup(typical_batch_config, monkeypatch):
     BatchJob(typical_batch_config).delete()
     count_2 = len(list(batch_dir.glob("*")))
     assert count_2 == count_0, "Batch did not clear all job files!"
+
+
+@pytest.mark.parametrize("typical_batch_config", (False,), indirect=True)
+def test_batch_job_setup_copies_config_files_only(typical_batch_config):
+    """Test batch setup with config-only file copying."""
+
+    batch_dir = typical_batch_config.parent
+    config = ConfigType.JSON.load(typical_batch_config)
+    config["copy"] = "config"
+    config["sets"][0]["args"]["project_points"] = [
+        "./project_points/project_points.csv"
+    ]
+    config["sets"][0]["args"]["big_brown_bat"] = [
+        "{'source': './project_points/project_points_test.csv'}"
+    ]
+    ConfigType.JSON.write(typical_batch_config, config)
+    (batch_dir / "large_unreferenced_file.h5").touch()
+
+    BatchJob(typical_batch_config).run(dry_run=True)
+
+    job_dir = batch_dir / "set1_wthh80_wtpp0"  # cspell: disable-line
+    copied_files = {
+        path.relative_to(job_dir).as_posix()
+        for path in job_dir.rglob("*")
+        if path.is_file()
+    }
+    assert copied_files == {
+        "config_aggregation.json",
+        "config_collect.json",
+        "config_gen.json",
+        "config_pipeline.json",
+        "project_points/project_points.csv",
+        "project_points/project_points_test.csv",
+        "sam_configs/turbine.json",
+    }
 
 
 @pytest.mark.parametrize("typical_batch_config", (True, False), indirect=True)
