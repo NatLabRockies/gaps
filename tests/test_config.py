@@ -11,6 +11,7 @@ from gaps.config import (
     config_as_str_for_docstring,
     resolve_all_paths,
 )
+from gaps.exceptions import gapsConfigError
 
 
 def test_resolve_all_paths():
@@ -246,6 +247,163 @@ def test_load_config_json5(tmp_path):
 
     result = load_config(config_file)
     assert result == {"key": "value", "number": 42}
+
+
+@pytest.mark.parametrize("config_type", list(ConfigType))
+def test_load_config_inherits_and_overrides(tmp_path, config_type):
+    """Test recursively merging a child config over its parent."""
+    parent_file = tmp_path / f"parent.{config_type}"
+    child_file = tmp_path / f"child.{config_type}"
+    config_type.write(
+        parent_file,
+        {
+            "input": 1,
+            "nested": {"keep": "parent", "override": "parent"},
+            "items": [1, 2],
+        },
+    )
+    config_type.write(
+        child_file,
+        {
+            "inherit_from": parent_file.name,
+            "nested": {"override": "child"},
+            "items": [3],
+        },
+    )
+
+    assert load_config(child_file) == {
+        "input": 1,
+        "nested": {"keep": "parent", "override": "child"},
+        "items": [3],
+    }
+
+
+@pytest.mark.parametrize("config_type", list(ConfigType))
+def test_load_config_deletes_inherited_keys(tmp_path, config_type):
+    """Test deleting inherited keys at any mapping depth."""
+    parent_file = tmp_path / f"parent.{config_type}"
+    child_file = tmp_path / f"child.{config_type}"
+    config_type.write(
+        parent_file,
+        {
+            "remove": "parent",
+            "nested": {"keep": 1, "remove": 2},
+            "replace_scalar": "parent",
+        },
+    )
+    config_type.write(
+        child_file,
+        {
+            "inherit_from": parent_file.name,
+            "remove": "DELETE",
+            "missing": "DELETE",
+            "nested": {
+                "remove": "DELETE",
+                "missing": "DELETE",
+                "lowercase": "delete",
+                "embedded": "KEEP DELETE",
+            },
+            "replace_scalar": {"missing": "DELETE", "keep": 3},
+        },
+    )
+
+    assert load_config(child_file) == {
+        "nested": {
+            "keep": 1,
+            "lowercase": "delete",
+            "embedded": "KEEP DELETE",
+        },
+        "replace_scalar": {"keep": 3},
+    }
+
+
+def test_load_config_recursive_cross_format_inheritance(tmp_path):
+    """Test inheritance, deletion, and overrides across config formats."""
+    base_file = tmp_path / "base.json"
+    middle_file = tmp_path / "middle.yaml"
+    child_file = tmp_path / "child.toml"
+    ConfigType.JSON.write(base_file, {"a": 1, "b": 2, "nested": {"c": 3}})
+    ConfigType.YAML.write(
+        middle_file,
+        {"inherit_from": base_file.name, "b": "DELETE", "nested": {"d": 4}},
+    )
+    ConfigType.TOML.write(
+        child_file,
+        {"inherit_from": middle_file.name, "a": 10, "nested": {"c": 30}},
+    )
+
+    assert load_config(child_file) == {
+        "a": 10,
+        "nested": {"c": 30, "d": 4},
+    }
+
+
+def test_load_config_resolves_paths_from_source_config(tmp_path):
+    """Test resolving inherited values relative to their source files."""
+    parent_dir = tmp_path / "parents"
+    child_dir = tmp_path / "children"
+    parent_dir.mkdir()
+    child_dir.mkdir()
+    parent_file = parent_dir / "base.json"
+    child_file = child_dir / "child.yaml"
+    ConfigType.JSON.write(parent_file, {"parent_path": "./parent.csv"})
+    ConfigType.YAML.write(
+        child_file,
+        {
+            "inherit_from": "../parents/base.json",
+            "child_path": "./child.csv",
+            "cmd": "./script.py --input ./input.csv",
+        },
+    )
+
+    resolved = load_config(child_file, excluded_keys={"cmd"})
+    assert resolved == {
+        "parent_path": (parent_dir / "parent.csv").as_posix(),
+        "child_path": (child_dir / "child.csv").as_posix(),
+        "cmd": "./script.py --input ./input.csv",
+    }
+
+    unresolved = load_config(child_file, resolve_paths=False)
+    assert unresolved == {
+        "parent_path": "./parent.csv",
+        "child_path": "./child.csv",
+        "cmd": "./script.py --input ./input.csv",
+    }
+
+
+def test_load_config_detects_inheritance_cycle(tmp_path):
+    """Test reporting the complete circular inheritance chain."""
+    first_file = tmp_path / "first.json"
+    second_file = tmp_path / "second.yaml"
+    ConfigType.JSON.write(first_file, {"inherit_from": second_file.name})
+    ConfigType.YAML.write(second_file, {"inherit_from": first_file.name})
+
+    with pytest.raises(
+        gapsConfigError, match="Circular config inheritance"
+    ) as exc:
+        load_config(first_file)
+
+    assert "first.json" in str(exc.value)
+    assert "second.yaml" in str(exc.value)
+
+
+@pytest.mark.parametrize("inherit_from", [None, "", ["parent.json"]])
+def test_load_config_rejects_invalid_inheritance_value(tmp_path, inherit_from):
+    """Test requiring a non-empty parent config path string."""
+    config_file = tmp_path / "child.json"
+    ConfigType.JSON.write(config_file, {"inherit_from": inherit_from})
+
+    with pytest.raises(gapsConfigError, match="must be a non-empty string"):
+        load_config(config_file)
+
+
+def test_load_config_missing_parent(tmp_path):
+    """Test exposing the resolved path when an inherited config is missing."""
+    config_file = tmp_path / "child.json"
+    ConfigType.JSON.write(config_file, {"inherit_from": "missing.json"})
+
+    with pytest.raises(FileNotFoundError, match=r"missing[.]json"):
+        load_config(config_file)
 
 
 if __name__ == "__main__":

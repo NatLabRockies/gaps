@@ -2,6 +2,7 @@
 
 import logging
 import collections
+from copy import deepcopy
 from pathlib import Path
 from abc import ABC, abstractmethod
 
@@ -13,10 +14,12 @@ import pyjson5
 from gaps.log import init_logger
 from gaps.utilities.enums import CaseInsensitiveEnum
 from gaps.utilities.base import resolve_path
-from gaps.exceptions import gapsValueError
+from gaps.exceptions import gapsConfigError, gapsValueError
 
 logger = logging.getLogger(__name__)
 _CONFIG_HANDLER_REGISTRY = {}
+_INHERIT_FROM_KEY = "inherit_from"
+_DELETE_SENTINEL = "DELETE"
 
 
 class _JSON5Formatter:
@@ -225,7 +228,7 @@ def config_as_str_for_docstring(
 
 
 def load_config(config_filepath, resolve_paths=True, excluded_keys=None):
-    """Load a config file
+    """Load a config file, recursively applying inherited configuration.
 
     Parameters
     ----------
@@ -246,12 +249,41 @@ def load_config(config_filepath, resolve_paths=True, excluded_keys=None):
 
     Raises
     ------
+    gapsConfigError
+        If the inheritance value is invalid or inheritance is circular.
     gapsValueError
         If input `config_filepath` has no file ending.
+
+    Notes
+    -----
+    A config may use ``inherit_from`` to name another config file.
+    Parent configs are loaded recursively and dictionaries are
+    deep-merged, with values from the child taking precedence. An exact
+    child value of ``"DELETE"`` removes that key from the inherited
+    result. Parent references and other relative paths are resolved
+    relative to the file where they are defined.
     """
+    return _load_config(
+        config_filepath,
+        resolve_paths=resolve_paths,
+        excluded_keys=excluded_keys,
+        inheritance_chain=(),
+    )
+
+
+def _load_config(
+    config_filepath, resolve_paths, excluded_keys, inheritance_chain
+):
+    """Recursively load and merge a config inheritance chain."""
 
     # TODO: maybe also have a "required keys" argument
     config_filepath = Path(config_filepath).expanduser().resolve()
+    if config_filepath in inheritance_chain:
+        cycle = (*inheritance_chain, config_filepath)
+        chain = " -> ".join(path.as_posix() for path in cycle)
+        msg = f"Circular config inheritance detected: {chain}"
+        raise gapsConfigError(msg)
+
     if "." not in config_filepath.name:
         msg = (
             f"Configuration file must have a file-ending. Got: "
@@ -261,12 +293,52 @@ def load_config(config_filepath, resolve_paths=True, excluded_keys=None):
 
     config_type = ConfigType(config_filepath.name.split(".")[-1])
     config = config_type.load(config_filepath)
+    has_inheritance = _INHERIT_FROM_KEY in config
+    inherit_from = config.pop(_INHERIT_FROM_KEY, None)
+
     if resolve_paths:
-        return resolve_all_paths(
+        config = resolve_all_paths(
             config, config_filepath.parent, excluded_keys=excluded_keys
         )
 
-    return config
+    if not has_inheritance:
+        return config
+
+    if not isinstance(inherit_from, str) or not inherit_from.strip():
+        msg = (
+            f"Config inheritance key {_INHERIT_FROM_KEY!r} in "
+            f"{config_filepath.as_posix()!r} must be a non-empty string"
+        )
+        raise gapsConfigError(msg)
+
+    parent_filepath = Path(inherit_from).expanduser()
+    if not parent_filepath.is_absolute():
+        parent_filepath = config_filepath.parent / parent_filepath
+
+    parent_config = _load_config(
+        parent_filepath,
+        resolve_paths=resolve_paths,
+        excluded_keys=excluded_keys,
+        inheritance_chain=(*inheritance_chain, config_filepath),
+    )
+    return _merge_configs(parent_config, config)
+
+
+def _merge_configs(parent, child):
+    """Deep merge a child config over a parent config."""
+    merged = deepcopy(parent)
+    for key, value in child.items():
+        if value == _DELETE_SENTINEL:
+            merged.pop(key, None)
+        elif isinstance(value, collections.abc.Mapping):
+            parent_value = merged.get(key, {})
+            if not isinstance(parent_value, collections.abc.Mapping):
+                parent_value = {}
+            merged[key] = _merge_configs(parent_value, value)
+        else:
+            merged[key] = deepcopy(value)
+
+    return merged
 
 
 # complexipy: ignore

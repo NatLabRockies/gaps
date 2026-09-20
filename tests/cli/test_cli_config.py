@@ -25,7 +25,8 @@ from gaps.warn import gapsWarning
 from gaps.utilities import TAG
 
 
-def _testing_function(  # noqa: PLR0913, PLR0917
+# ruff: ignore[too-many-arguments, too-many-positional-arguments]
+def _testing_function(
     project_points,
     input1,
     input3,
@@ -103,7 +104,8 @@ def _testing_function(  # noqa: PLR0913, PLR0917
     return out_fp.as_posix()
 
 
-def _testing_function_no_pp(  # noqa: PLR0913, PLR0917
+# ruff: ignore[too-many-arguments, too-many-positional-arguments]
+def _testing_function_no_pp(
     input1,
     input3,
     tag,
@@ -218,7 +220,7 @@ class TestCommand:
         self._input2 = _input2
         self._input3 = input3
 
-    def run(  # noqa: PLR0913, PLR0917
+    def run(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
         project_points,
         tag,
@@ -470,6 +472,55 @@ def test_run_local(
     assert isinstance(outputs["tag"], str)
     assert outputs["command_name"] == "run"
     assert outputs["job_name"] == f"{tmp_path.name}_run{outputs['tag']}"
+
+
+def test_run_local_with_inherited_config(test_ctx, runnable_script, caplog):
+    """Test resolving inheritance before validation and preprocessing."""
+    tmp_path = test_ctx.obj["TMP_PATH"]
+    parent_config = {
+        "execution_control": {"max_workers": 1},
+        "input1": 1,
+        "input3": "parent",
+        "project_points": [0, 1],
+        "pool_size": 99,
+    }
+    parent_file = tmp_path / "parent.json"
+    child_file = tmp_path / "child.json"
+    parent_file.write_text(json.dumps(parent_config), encoding="utf-8")
+    child_file.write_text(
+        json.dumps(
+            {
+                "inherit_from": parent_file.name,
+                "input1": 2,
+                "pool_size": "DELETE",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def pre_processing(config):
+        assert config["input1"] == 2
+        assert config["input3"] == "parent"
+        assert "pool_size" not in config
+        assert "inherit_from" not in config
+        return config
+
+    command_config = CLICommandFromFunction(
+        _testing_function,
+        name="run",
+        config_preprocessor=pre_processing,
+    )
+
+    from_config(child_file, command_config)
+
+    outputs = json.loads((tmp_path / "out.json").read_text(encoding="utf-8"))
+    assert outputs["input1"] == 2
+    assert outputs["input3"] == "parent"
+    assert outputs["pool_size"] == 16
+    assert not any(
+        "inherit_from" in record.message or "DELETE" in record.message
+        for record in caplog.records
+    )
 
 
 @pytest.mark.parametrize(
@@ -1191,7 +1242,7 @@ def test_run_local_multiple_out_files(test_ctx, runnable_script, test_class):
     from_config(config_fp, command_config)
     out_fns = [f"out{TAG}0.json", f"out{TAG}1.json"]
 
-    for out_fn, in3 in zip(out_fns, config["input3"]):
+    for out_fn, in3 in zip(out_fns, config["input3"], strict=False):
         expected_file = tmp_path / out_fn
         assert expected_file.exists()
         with expected_file.open("r", encoding="utf-8") as output_file:
@@ -1382,7 +1433,8 @@ def test_args_passed_to_pre_processor(
     with config_fp.open("w", encoding="utf-8") as config_file:
         json.dump(input_config, config_file)
 
-    def pre_processing(  # noqa: PLR0913, PLR0917
+    # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+    def pre_processing(
         config,
         a_value,
         a_multiplier,
