@@ -52,7 +52,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "complexipy>=7.0.1,<8",
+  "complexipy>=8.0.1,<9",
   "ipython>=8.18.1,<9",
   "jupyter>=1.1.1,<2",
   "pipreqs>=0.4.13,<0.5",
@@ -153,7 +153,7 @@ ruff = ">=0.16.7,<0.17"
 frozenlist = ">=1.7,<2"
 
 [tool.pixi.feature.dev.pypi-dependencies]
-complexipy = ">=7.0.1,<8"
+complexipy = ">=8.0.1,<9"
 
 [tool.pixi.feature.test.dependencies]
 flaky = ">=3.8.1,<4"
