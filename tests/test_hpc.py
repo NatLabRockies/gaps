@@ -305,19 +305,19 @@ def test_hpc_submit(manager, q_str, kwargs, expectation, add_qos, monkeypatch):
 @pytest.mark.parametrize("manager", [PBS, SLURM])
 def test_hpc_execution_parameter_exports(manager):
     """Test execution parameters are exported in HPC scripts."""
-    execution_parameters = {
+    exported_execution_parameters = {
         "walltime": 2,
         "max-workers": 4,
         "shell_value": "value with spaces; $HOME",
     }
-    exports = format_exports("reV-model", execution_parameters)
+    exports = format_exports("reV-model", exported_execution_parameters)
     script = manager().make_script_str(
         "test",
         "echo $REV_MODEL_WALLTIME",
         "rev",
         2,
         cli_name="reV-model",
-        execution_parameters=execution_parameters,
+        exported_execution_parameters=exported_execution_parameters,
     )
 
     assert exports.splitlines() == [
