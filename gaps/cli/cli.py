@@ -254,7 +254,10 @@ def make_cli(commands, info=None):
         main_help = "Command Line Interface"
 
     main = _CleanupGroup(
-        help=main_help, params=options, callback=_main_cb, commands=commands
+        help=main_help,
+        params=options,
+        callback=partial(_main_cb, cli_name=prog_name),
+        commands=commands,
     )
     version = info.get("version")
     if version is not None:
@@ -264,9 +267,10 @@ def make_cli(commands, info=None):
 
 
 @click.pass_context
-def _main_cb(ctx, verbose):
+def _main_cb(ctx, verbose, cli_name=None):
     """Set the obj and verbose settings of the commands"""
     ctx.ensure_object(dict)
     ctx.obj["VERBOSE"] = verbose
     ctx.obj["PIPELINE_STEP"] = ctx.invoked_subcommand
+    ctx.obj["CLI_NAME"] = cli_name
     ctx.max_content_width = 92
