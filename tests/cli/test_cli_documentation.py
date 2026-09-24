@@ -255,6 +255,8 @@ def test_command_documentation_default_exec_values_and_doc():
     assert ":max_workers:" not in doc.default_exec_values
     assert ":nodes:" not in doc.exec_control_doc
     assert ":max_workers:" not in doc.exec_control_doc
+    assert "REV_WALLTIME" in doc.exec_control_doc
+    assert "REV_JOB_NAME" in doc.exec_control_doc
 
     doc = CommandDocumentation(func_no_args, is_split_across_nodes=True)
     assert doc.default_exec_values == DEFAULT_EXEC_VALUES
