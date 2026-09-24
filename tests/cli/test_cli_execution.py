@@ -84,7 +84,8 @@ def test_should_run_stale_hpc_running_status(test_ctx):
         """Minimal scheduler stub that cannot find the job."""
 
         @staticmethod
-        def check_status_using_job_id(job_id):  # noqa
+        # ruff: ignore[unused-static-method-argument]
+        def check_status_using_job_id(job_id):
             return None
 
     test_ctx.obj["MANAGER"] = _MissingJobManager()
@@ -98,7 +99,7 @@ def test_should_run_stale_hpc_running_status(test_ctx):
         test_ctx.obj["NAME"],
         job_attrs,
     )
-    status_updates.__enter__()  # noqa
+    status_updates.__enter__()  # ruff: ignore[unnecessary-dunder-call]
 
     assert _should_run(test_ctx)
 
