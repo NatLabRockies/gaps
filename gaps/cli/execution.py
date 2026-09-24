@@ -22,7 +22,7 @@ from gaps.exceptions import gapsConfigError
 logger = logging.getLogger(__name__)
 
 
-def kickoff_job(ctx, cmd, exec_kwargs):
+def kickoff_job(ctx, cmd, exec_kwargs, execution_parameters=None):
     """Kickoff a single job (a single command execution).
 
     Parameters
@@ -47,6 +47,9 @@ def kickoff_job(ctx, cmd, exec_kwargs):
         These will be filtered, so they may contain extra values. If
         some required inputs are missing from this dictionary, a
         `gapsConfigError` is raised.
+    execution_parameters : dict, optional
+        Original execution control parameters to export for HPC jobs.
+        By default, `None`, which exports the values from `exec_kwargs`.
 
     Raises
     ------
@@ -55,6 +58,7 @@ def kickoff_job(ctx, cmd, exec_kwargs):
         respective `submit` function.
     """
     exec_kwargs = deepcopy(exec_kwargs)
+    execution_parameters = deepcopy(execution_parameters or exec_kwargs)
     hardware_option = HardwareOption(exec_kwargs.pop("option", "local"))
     if hardware_option.manager is None:
         _kickoff_local_job(ctx, cmd)
@@ -64,6 +68,8 @@ def kickoff_job(ctx, cmd, exec_kwargs):
     exec_kwargs = _filter_exec_kwargs(
         exec_kwargs, hardware_option.manager.make_script_str, hardware_option
     )
+    exec_kwargs["cli_name"] = ctx.obj.get("CLI_NAME")
+    exec_kwargs["execution_parameters"] = execution_parameters
     _kickoff_hpc_job(ctx, cmd, hardware_option, **exec_kwargs)
 
 
