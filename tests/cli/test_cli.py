@@ -139,6 +139,7 @@ def test_make_cli():
     ]
 
     main = make_cli(commands, info={"name": "test", "version": "0.1.0"})
+    assert main.callback.keywords["cli_name"] == "test"
     assert "run" in Pipeline.COMMANDS
     assert "collect-run" not in Pipeline.COMMANDS
     assert "analyze" in Pipeline.COMMANDS
