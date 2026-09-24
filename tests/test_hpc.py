@@ -1,7 +1,7 @@
 """GAPs HPC job managers tests"""
 
 import shlex
-import subprocess
+import subprocess  # ruff: ignore[suspicious-subprocess-import]
 from pathlib import Path
 
 import pytest
@@ -15,18 +15,19 @@ from gaps.hpc import (
     DEFAULT_STDOUT_PATH,
     submit,
     format_env,
+    format_exports,
     format_walltime,
 )
 from gaps.exceptions import gapsHPCError, gapsExecutionError, gapsValueError
 from gaps.warn import gapsHPCWarning
 
-with open(TEST_DATA_DIR / "hpc" / "qstat.txt", "r") as f:
-    Q_STAT_RAW = f.read()
+Q_STAT_RAW = Path(TEST_DATA_DIR / "hpc" / "qstat.txt").read_text(
+    encoding="utf-8"
+)
 Q_STAT = _skip_q_rows(Q_STAT_RAW, (0, 1))
-
-with open(TEST_DATA_DIR / "hpc" / "squeue.txt", "r") as f:
-    SQUEUE_RAW = f.read()
-
+SQUEUE_RAW = Path(TEST_DATA_DIR / "hpc" / "squeue.txt").read_text(
+    encoding="utf-8"
+)
 JOB_IDS = (12345, 12346, 12347)
 PBS_HEADER = ("Job id", "Name", "User", "Time Use", "S", "Queue")
 SLURM_HEADER = (
@@ -288,7 +289,7 @@ def test_hpc_submit(manager, q_str, kwargs, expectation, add_qos, monkeypatch):
     assert out == "9999"
     assert err is None
 
-    with open(fn_sh, "r") as submission_file:
+    with fn_sh.open("r", encoding="utf-8") as submission_file:
         shell_script = submission_file.readlines()
 
     for expected_str, line_no in expectation.items():
@@ -299,6 +300,37 @@ def test_hpc_submit(manager, q_str, kwargs, expectation, add_qos, monkeypatch):
     stdout_dir = Path(DEFAULT_STDOUT_PATH)
     assert stdout_dir.exists()
     stdout_dir.rmdir()
+
+
+@pytest.mark.parametrize("manager", [PBS, SLURM])
+def test_hpc_execution_parameter_exports(manager):
+    """Test execution parameters are exported in HPC scripts."""
+    execution_parameters = {
+        "walltime": 2,
+        "max-workers": 4,
+        "shell_value": "value with spaces; $HOME",
+    }
+    exports = format_exports("reV-model", execution_parameters)
+    script = manager().make_script_str(
+        "test",
+        "echo $REV_MODEL_WALLTIME",
+        "rev",
+        2,
+        cli_name="reV-model",
+        execution_parameters=execution_parameters,
+    )
+
+    assert exports.splitlines() == [
+        "export REV_MODEL_WALLTIME=2",
+        "export REV_MODEL_MAX_WORKERS=4",
+        "export REV_MODEL_SHELL_VALUE='value with spaces; $HOME'",
+    ]
+    assert exports in script
+    assert "export REV_MODEL_JOB_NAME=test" in script
+    assert script.index(exports) < script.index("echo $REV_MODEL_WALLTIME")
+    assert format_exports("reV", job_name="test") == (
+        "export REV_JOB_NAME=test"
+    )
 
 
 def test_submit(monkeypatch):
