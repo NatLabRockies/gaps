@@ -546,6 +546,27 @@ class SLURM(HpcJobManager):
         return "\n".join(filter(None, script_args))
 
 
+def format_exports(cli_name=None, execution_parameters=None, job_name=None):
+    """Format job metadata as shell environment exports."""
+    if not cli_name:
+        return ""
+
+    prefix = re.sub(r"\W", "_", str(cli_name).upper())
+    if prefix[0].isdigit():
+        prefix = f"_{prefix}"
+
+    execution_parameters = dict(execution_parameters or {})
+    if job_name is not None:
+        execution_parameters["job_name"] = job_name
+
+    exports = []
+    for name, value in execution_parameters.items():
+        env_name = re.sub(r"\W", "_", str(name).upper())
+        exports.append(f"export {prefix}_{env_name}={shlex.quote(str(value))}")
+
+    return "\n".join(exports)
+
+
 def make_sh(fname, script):
     """Make a shell script (.sh file) to execute a subprocess.
 
