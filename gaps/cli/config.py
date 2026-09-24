@@ -83,7 +83,8 @@ class _FromConfig:
         self.config = load_config(config_file, excluded_keys={"cmd"})
         self.log_directory = None
         self.verbose = None
-        self.exec_kwargs = None
+        self.scheduler_kwargs = None
+        self.exported_execution_parameters = None
         self.logging_options = None
         self.exclude_from_status = None
         self._num_nodes = self._get_num_nodes()
@@ -118,7 +119,7 @@ class _FromConfig:
         exec_control = self.config.get("execution_control", {})
         if exec_control.get("option") == "local":
             return 1
-        return exec_control.pop("nodes", 1)
+        return exec_control.get("nodes", 1)
 
     def enable_logging(self):
         """Enable logging based on config file input"""
@@ -186,21 +187,26 @@ class _FromConfig:
             )
         return self
 
-    def set_exec_kwargs(self):
+    def set_scheduler_kwargs(self):
         """Extract the execution control dictionary"""
-        self.exec_kwargs = {
+        self.exported_execution_parameters = deepcopy(
+            self.config.get("execution_control", {})
+        )
+        self.scheduler_kwargs = {
             "option": "local",
             "sh_script": "",
             "stdout_path": (self.log_directory / "stdout").as_posix(),
         }
 
-        self.exec_kwargs.update(self.config.get("execution_control", {}))
+        self.scheduler_kwargs.update(self.exported_execution_parameters)
+        self.scheduler_kwargs.pop("nodes", None)
         extra_params = set()
         for extra_exec_param in EXTRA_EXEC_PARAMS:
             if extra_exec_param in self.config:
                 extra_params.add(extra_exec_param)
                 param = self.config.pop(extra_exec_param)
-                self.exec_kwargs[extra_exec_param] = param
+                self.scheduler_kwargs[extra_exec_param] = param
+                self.exported_execution_parameters[extra_exec_param] = param
 
         if extra_params:
             msg = (
@@ -219,7 +225,7 @@ class _FromConfig:
             "name": self.job_name,
             "log_directory": self.log_directory.as_posix(),
             "verbose": self.verbose,
-            "node": self.exec_kwargs.get("option", "local") != "local",
+            "node": self.scheduler_kwargs.get("option", "local") != "local",
         }
         return self
 
@@ -266,7 +272,7 @@ class _FromConfig:
         self._warn_about_excessive_au_usage(len(jobs))
         extra_exec_args = self._extract_extra_exec_args_for_command()
 
-        for tag, values, exec_kwargs in self._with_tagged_context(jobs):
+        for tag, values, scheduler_kwargs in self._with_tagged_context(jobs):
             node_specific_config = self._compile_node_config(tag)
             node_specific_config.update(extra_exec_args)
 
@@ -279,7 +285,14 @@ class _FromConfig:
                     )
 
             cmd = self._compile_run_command(node_specific_config)
-            kickoff_job(self.ctx, cmd, exec_kwargs)
+            kickoff_job(
+                self.ctx,
+                cmd,
+                scheduler_kwargs,
+                exported_execution_parameters=(
+                    self.exported_execution_parameters
+                ),
+            )
 
         return self
 
@@ -287,8 +300,8 @@ class _FromConfig:
         """Iterate over jobs and populate context with job name"""
         num_jobs_submit = len(jobs)
 
-        exec_kwargs = deepcopy(self.exec_kwargs)
-        num_test_nodes = exec_kwargs.pop("num_test_nodes", None)
+        scheduler_kwargs = deepcopy(self.scheduler_kwargs)
+        num_test_nodes = scheduler_kwargs.pop("num_test_nodes", None)
         if num_test_nodes is None:
             num_test_nodes = float("inf")
 
@@ -298,7 +311,7 @@ class _FromConfig:
 
             tag = node_tag(node_index, num_jobs_submit)
             self.ctx.obj["NAME"] = f"{self.job_name}{tag}"
-            yield tag, values, exec_kwargs
+            yield tag, values, scheduler_kwargs
 
     def _compile_node_config(self, tag):
         """Compile initial node-specific config"""
@@ -347,9 +360,9 @@ class _FromConfig:
         """Dictionary of function args from the exec block"""
         extra_exec_args = {}
         for param in EXTRA_EXEC_PARAMS:
-            if param not in self.exec_kwargs:
+            if param not in self.scheduler_kwargs:
                 continue
-            extra_exec_args[param] = self.exec_kwargs.pop(param)
+            extra_exec_args[param] = self.scheduler_kwargs.pop(param)
         return extra_exec_args
 
     def _keys_and_lists_to_run(self):
@@ -375,17 +388,17 @@ class _FromConfig:
     def _warn_about_excessive_au_usage(self, num_jobs):
         """Warn if max job runtime exceeds AU threshold"""
         try:
-            max_walltime_per_job = float(self.exec_kwargs.get("walltime"))
+            max_walltime_per_job = float(self.scheduler_kwargs.get("walltime"))
         except (TypeError, ValueError):
             return
 
-        qos = self.exec_kwargs.get("qos") or str(QOSOption.UNSPECIFIED)
+        qos = self.scheduler_kwargs.get("qos") or str(QOSOption.UNSPECIFIED)
         try:
             qos_charge_factor = QOSOption(str(qos)).charge_factor
         except ValueError:
             qos_charge_factor = 1
 
-        hardware = self.exec_kwargs.get("option", "local")
+        hardware = self.scheduler_kwargs.get("option", "local")
         if hardware.casefold() == HardwareOption.SLURM:
             available_opts = [
                 f"{opt}"
@@ -426,7 +439,7 @@ class _FromConfig:
                 .validate_config()
                 .log_job_info()
                 .preprocess_config()
-                .set_exec_kwargs()
+                .set_scheduler_kwargs()
                 .set_logging_options()
                 .set_exclude_from_status()
                 .prepare_context()
