@@ -361,7 +361,7 @@ class PBS(HpcJobManager):
         conda_env=None,
         sh_script=None,
         cli_name=None,
-        execution_parameters=None,
+        exported_execution_parameters=None,
     ):
         """Generate the PBS submission script.
 
@@ -398,7 +398,7 @@ class PBS(HpcJobManager):
         cli_name : str, optional
             CLI name used to prefix exported execution parameter
             environment variables. By default, `None`.
-        execution_parameters : dict, optional
+        exported_execution_parameters : dict, optional
             Execution parameters to export as environment variables. By
             default, `None`.
 
@@ -427,7 +427,9 @@ class PBS(HpcJobManager):
             # cspell:disable-next-line
             f"#PBS -e {stdout_path}/{name}_$PBS_JOBID.e",
             f"#PBS -l {features}" if features else "",
-            format_exports(cli_name, execution_parameters, job_name=name),
+            format_exports(
+                cli_name, exported_execution_parameters, job_name=name
+            ),
             format_env(conda_env),
             # cspell:disable-next-line
             "echo Running on: $HOSTNAME, Machine Type: $MACHTYPE",
@@ -496,7 +498,7 @@ class SLURM(HpcJobManager):
         conda_env=None,
         sh_script=None,
         cli_name=None,
-        execution_parameters=None,
+        exported_execution_parameters=None,
     ):
         """Generate the SLURM submission script.
 
@@ -532,7 +534,7 @@ class SLURM(HpcJobManager):
         cli_name : str, optional
             CLI name used to prefix exported execution parameter
             environment variables. By default, `None`.
-        execution_parameters : dict, optional
+        exported_execution_parameters : dict, optional
             Execution parameters to export as environment variables. By
             default, `None`.
 
@@ -555,7 +557,9 @@ class SLURM(HpcJobManager):
             f"#SBATCH --qos={qos}",
             f"#SBATCH {feature}  # extra feature" if feature else "",
             f"#SBATCH --mem={memory}  # node RAM in MB" if memory else "",
-            format_exports(cli_name, execution_parameters, job_name=name),
+            format_exports(
+                cli_name, exported_execution_parameters, job_name=name
+            ),
             format_env(conda_env),
             # cspell:disable-next-line
             "echo Running on: $HOSTNAME, Machine Type: $MACHTYPE",
@@ -566,7 +570,9 @@ class SLURM(HpcJobManager):
         return "\n".join(filter(None, script_args))
 
 
-def format_exports(cli_name=None, execution_parameters=None, job_name=None):
+def format_exports(
+    cli_name=None, exported_execution_parameters=None, job_name=None
+):
     """Format job metadata as shell environment exports."""
     if not cli_name:
         return ""
@@ -575,12 +581,12 @@ def format_exports(cli_name=None, execution_parameters=None, job_name=None):
     if prefix[0].isdigit():
         prefix = f"_{prefix}"
 
-    execution_parameters = dict(execution_parameters or {})
+    exported_execution_parameters = dict(exported_execution_parameters or {})
     if job_name is not None:
-        execution_parameters["job_name"] = job_name
+        exported_execution_parameters["job_name"] = job_name
 
     exports = []
-    for name, value in execution_parameters.items():
+    for name, value in exported_execution_parameters.items():
         env_name = re.sub(r"\W", "_", str(name).upper())
         exports.append(f"export {prefix}_{env_name}={shlex.quote(str(value))}")
 
