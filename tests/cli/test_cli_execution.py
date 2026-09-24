@@ -258,6 +258,51 @@ def test_kickoff_job_hpc(
     test_ctx.obj.pop("MANAGER", None)
 
 
+@pytest.mark.parametrize(
+    "hardware_option", [HardwareOption.SLURM, HardwareOption.PEREGRINE]
+)
+def test_kickoff_job_passes_hpc_export_metadata(
+    test_ctx, monkeypatch, hardware_option
+):
+    """Test HPC managers receive the CLI name and execution parameters."""
+    test_ctx.obj["CLI_NAME"] = "reV"
+    exported_execution_parameters = {
+        "option": "slurm",
+        "allocation": "test",
+        "walltime": 1,
+        "nodes": 2,
+        "max_workers": 4,
+    }
+    observed = {}
+
+    def _submit(name, **kwargs):
+        observed["name"] = name
+        observed["kwargs"] = kwargs
+        return "9999", None
+
+    monkeypatch.setattr(
+        hardware_option.manager, "submit", _submit, raising=True
+    )
+
+    kickoff_job(
+        test_ctx,
+        "echo $REV_MAX_WORKERS",
+        {
+            "option": f"{hardware_option}",
+            "allocation": "test",
+            "walltime": 1,
+        },
+        exported_execution_parameters=exported_execution_parameters,
+    )
+
+    assert observed["name"] == test_ctx.obj["NAME"]
+    assert observed["kwargs"]["cli_name"] == "reV"
+    assert (
+        observed["kwargs"]["exported_execution_parameters"]
+        == exported_execution_parameters
+    )
+
+
 def test_qos_values(test_ctx, monkeypatch):
     """Test kickoff command for HPC job."""
 
