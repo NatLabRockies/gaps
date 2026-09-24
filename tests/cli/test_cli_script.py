@@ -1,7 +1,10 @@
 """GAPs script command tests"""
 
 import json
+import os
+import shlex
 import subprocess  # ruff: ignore[suspicious-subprocess-import]
+import sys
 from pathlib import Path
 
 import pytest
@@ -116,13 +119,21 @@ with open("execution_parameters.json", "w", encoding="utf-8") as file:
 
     def _run_submission(command):
         submission_script = Path(command.split(maxsplit=1)[1])
+        env = os.environ.copy()
+        for line in submission_script.read_text(encoding="utf-8").splitlines():
+            if line.startswith("export TEST_"):
+                assignment = shlex.split(line, posix=True)[1]
+                name, value = assignment.split("=", maxsplit=1)
+                env[name] = value
+
         # ruff: ignore[subprocess-without-shell-equals-true]
         result = subprocess.run(
-            # ruff: ignore[start-process-with-partial-path]
-            ["bash", submission_script],
+            [sys.executable, script_fp],
             capture_output=True,
             text=True,
             check=False,
+            cwd=tmp_path,
+            env=env,
         )
         assert result.returncode == 0, result.stderr
         return "Submitted batch job 9999", None
