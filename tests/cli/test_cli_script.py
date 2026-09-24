@@ -1,12 +1,18 @@
 """GAPs script command tests"""
 
 import json
+import os
+import shlex
+import subprocess  # ruff: ignore[suspicious-subprocess-import]
+import sys
 from pathlib import Path
 
 import pytest
 import pandas as pd
 
+import gaps.hpc
 from gaps.cli import CLICommandFromFunction, make_cli
+from gaps.status import HardwareOption
 
 
 SAMPLE_SCRIPT = """
@@ -64,6 +70,87 @@ def test_script_cli(tmp_path, cli_runner, runnable_script):
 
     test_df = pd.read_csv(tmp_path / "test_out.csv")
     pd.testing.assert_frame_equal(test_df, pd.DataFrame({"s": [0, 1, 34]}))
+
+
+def test_script_cli_can_access_execution_parameters_from_env(
+    tmp_path, cli_runner, monkeypatch
+):
+    """Test script commands can read execution parameters from the env."""
+    main = make_cli(
+        [CLICommandFromFunction(run_func, add_collect=False)],
+        info={"name": "test"},
+    )
+    config_fp = tmp_path / "config_script.json"
+    script_fp = tmp_path / "read_env.py"
+    output_fp = tmp_path / "execution_parameters.json"
+    execution_control = {
+        "option": "slurm",
+        "allocation": "test-allocation",
+        "walltime": 1,
+        "nodes": 2,
+        "num_test_nodes": 1,
+        "max_workers": 3,
+    }
+    config = {
+        "cmd": f"python {script_fp.name}",
+        "execution_control": execution_control,
+    }
+    config_fp.write_text(json.dumps(config), encoding="utf-8")
+    script_fp.write_text(
+        """import json
+import os
+
+names = [
+    "TEST_OPTION",
+    "TEST_ALLOCATION",
+    "TEST_WALLTIME",
+    "TEST_NODES",
+    "TEST_NUM_TEST_NODES",
+    "TEST_MAX_WORKERS",
+]
+with open("execution_parameters.json", "w", encoding="utf-8") as file:
+    json.dump({name: os.environ[name] for name in names}, file)
+""",
+        encoding="utf-8",
+    )
+
+    manager = HardwareOption.SLURM.manager
+    monkeypatch.setattr(manager, "_queue", {})
+
+    def _run_submission(command):
+        submission_script = Path(command.split(maxsplit=1)[1])
+        env = os.environ.copy()
+        for line in submission_script.read_text(encoding="utf-8").splitlines():
+            if line.startswith("export TEST_"):
+                assignment = shlex.split(line, posix=True)[1]
+                name, value = assignment.split("=", maxsplit=1)
+                env[name] = value
+
+        # ruff: ignore[subprocess-without-shell-equals-true]
+        result = subprocess.run(
+            [sys.executable, script_fp],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=tmp_path,
+            env=env,
+        )
+        assert result.returncode == 0, result.stderr
+        return "Submitted batch job 9999", None
+
+    monkeypatch.setattr(gaps.hpc, "submit", _run_submission, raising=True)
+
+    result = cli_runner.invoke(main, ["script", "-c", str(config_fp)])
+
+    assert result.exit_code == 0, result.exception
+    assert json.loads(output_fp.read_text(encoding="utf-8")) == {
+        "TEST_OPTION": "slurm",
+        "TEST_ALLOCATION": "test-allocation",
+        "TEST_WALLTIME": "1",
+        "TEST_NODES": "2",
+        "TEST_NUM_TEST_NODES": "1",
+        "TEST_MAX_WORKERS": "3",
+    }
 
 
 if __name__ == "__main__":

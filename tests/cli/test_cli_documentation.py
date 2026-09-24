@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-# pylint: disable=unused-argument,function-redefined,protected-access,
-# pylint: disable=invalid-name,too-few-public-methods
-"""
-GAPs CLI documentation tests.
-"""
+"""GAPs CLI documentation tests"""
 
 from copy import deepcopy
 from pathlib import Path
@@ -76,7 +71,9 @@ def test_command_documentation_extra_exec_params():
         "A timeout value.",
         "A worker pool size.",
     ]
-    expected_iter = zip(expected_parameters, expected_types, expected_decs)
+    expected_iter = zip(
+        expected_parameters, expected_types, expected_decs, strict=True
+    )
 
     doc = CommandDocumentation(func)
     for param, p_type, p_doc in expected_iter:
@@ -172,7 +169,11 @@ def test_command_documentation_extra_exec_params_user_defaults():
     ]
     expected_value = [2, 0.4, "test", None, None]
     expected_iter = zip(
-        expected_parameters, expected_types, expected_decs, expected_value
+        expected_parameters,
+        expected_types,
+        expected_decs,
+        expected_value,
+        strict=True,
     )
 
     doc = CommandDocumentation(func)
@@ -216,7 +217,9 @@ def test_command_documentation_extra_exec_params_defaults_no_docs():
     ]
 
     expected_value = [2, 0.4, "test", None, None]
-    expected_iter = zip(expected_parameters, expected_types, expected_value)
+    expected_iter = zip(
+        expected_parameters, expected_types, expected_value, strict=True
+    )
 
     doc = CommandDocumentation(func)
     for param, p_type, p_val in expected_iter:
@@ -255,6 +258,8 @@ def test_command_documentation_default_exec_values_and_doc():
     assert ":max_workers:" not in doc.default_exec_values
     assert ":nodes:" not in doc.exec_control_doc
     assert ":max_workers:" not in doc.exec_control_doc
+    assert "REV_WALLTIME" in doc.exec_control_doc
+    assert "REV_JOB_NAME" in doc.exec_control_doc
 
     doc = CommandDocumentation(func_no_args, is_split_across_nodes=True)
     assert doc.default_exec_values == DEFAULT_EXEC_VALUES
@@ -578,7 +583,7 @@ def test_command_documentation_for_class():
 
     doc = CommandDocumentation(
         TestCommand,
-        getattr(TestCommand, "func"),
+        TestCommand.func,
         preprocessor,
         skip_params={"a"},
         is_split_across_nodes=True,
@@ -684,7 +689,7 @@ def test_command_documentation_duplicate_params():
 
     doc = CommandDocumentation(
         TestCommand,
-        getattr(TestCommand, "func"),
+        TestCommand.func,
         preprocessor,
         skip_params={"a"},
         is_split_across_nodes=True,

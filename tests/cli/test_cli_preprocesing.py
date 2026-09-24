@@ -123,7 +123,9 @@ def test_preprocess_collect_config_pipeline_input(tmp_path):
     allowed_out_fn = {"pattern.h5", "another_pattern.h5"}
     assert len(config["_out_path"]) == 2
     assert len(config["_pattern"]) == 2
-    for out_fp, pattern in zip(config["_out_path"], config["_pattern"]):
+    for out_fp, pattern in zip(
+        config["_out_path"], config["_pattern"], strict=True
+    ):
         assert any(name in out_fp for name in allowed_out_fn)
         assert out_fp == pattern.replace(f"{TAG}*", "")
 
@@ -155,7 +157,7 @@ def test_preprocess_collect_config_pipeline_input_ignores_untagged_file(
 
     matched_files = sorted(
         Path(path)
-        for path in glob.glob(config["_pattern"][0])  # noqa
+        for path in glob.glob(config["_pattern"][0])  # ruff: ignore[glob]
     )
     assert matched_files == [job_file]
 
@@ -259,6 +261,48 @@ def test_preprocessor_receives_nodes_from_execution_control(
         == 1
     )
     assert ":nodes:" in command_config.documentation.exec_control_doc
+
+
+def test_execution_parameters_preserved_for_hpc_exports(
+    tmp_path, test_ctx, monkeypatch
+):
+    """Test orchestration parameters remain available for HPC exports."""
+    execution_control = {
+        "option": "slurm",
+        "allocation": "test-allocation",
+        "walltime": 1,
+        "nodes": 2,
+        "num_test_nodes": 1,
+        "max_workers": 3,
+    }
+    config_fp = tmp_path / "config.json"
+    with config_fp.open("w", encoding="utf-8") as config_file:
+        json.dump({"execution_control": execution_control}, config_file)
+
+    observed = {}
+
+    def _capture_kickoff(
+        _, __, exec_kwargs, exported_execution_parameters=None
+    ):
+        observed["exec_kwargs"] = exec_kwargs
+        observed["exported_execution_parameters"] = (
+            exported_execution_parameters
+        )
+
+    monkeypatch.setattr(
+        "gaps.cli.config.kickoff_job", _capture_kickoff, raising=True
+    )
+
+    def run_function(max_workers=None):
+        """No-op run function with an execution parameter."""
+
+    command_config = CLICommandFromFunction(run_function, name="run")
+    from_config(config_fp, command_config)
+
+    assert observed["exported_execution_parameters"] == execution_control
+    assert "nodes" not in observed["exec_kwargs"]
+    assert "num_test_nodes" not in observed["exec_kwargs"]
+    assert "max_workers" not in observed["exec_kwargs"]
 
 
 if __name__ == "__main__":

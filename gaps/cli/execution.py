@@ -22,7 +22,9 @@ from gaps.exceptions import gapsConfigError
 logger = logging.getLogger(__name__)
 
 
-def kickoff_job(ctx, cmd, exec_kwargs):
+def kickoff_job(
+    ctx, cmd, scheduler_kwargs, exported_execution_parameters=None
+):
     """Kickoff a single job (a single command execution).
 
     Parameters
@@ -42,29 +44,42 @@ def kickoff_job(ctx, cmd, exec_kwargs):
 
     cmd : str
         String form of command to kickoff.
-    exec_kwargs : dict
+    scheduler_kwargs : dict
         Keyword-value pairs to pass to the respective `submit` function.
         These will be filtered, so they may contain extra values. If
         some required inputs are missing from this dictionary, a
         `gapsConfigError` is raised.
+    exported_execution_parameters : dict, optional
+        Original execution control parameters to export for HPC jobs.
+        By default, `None`, which exports the values from
+        `scheduler_kwargs`.
 
     Raises
     ------
     gapsConfigError
-        If `exec_kwargs` is missing some arguments required by the
+        If `scheduler_kwargs` is missing some arguments required by the
         respective `submit` function.
     """
-    exec_kwargs = deepcopy(exec_kwargs)
-    hardware_option = HardwareOption(exec_kwargs.pop("option", "local"))
+    scheduler_kwargs = deepcopy(scheduler_kwargs)
+    exported_execution_parameters = deepcopy(
+        exported_execution_parameters or scheduler_kwargs
+    )
+    hardware_option = HardwareOption(scheduler_kwargs.pop("option", "local"))
     if hardware_option.manager is None:
         _kickoff_local_job(ctx, cmd)
         return
 
     ctx.obj["MANAGER"] = hardware_option.manager
-    exec_kwargs = _filter_exec_kwargs(
-        exec_kwargs, hardware_option.manager.make_script_str, hardware_option
+    scheduler_kwargs = _filter_exec_kwargs(
+        scheduler_kwargs,
+        hardware_option.manager.make_script_str,
+        hardware_option,
     )
-    _kickoff_hpc_job(ctx, cmd, hardware_option, **exec_kwargs)
+    scheduler_kwargs["cli_name"] = ctx.obj.get("CLI_NAME")
+    scheduler_kwargs["exported_execution_parameters"] = (
+        exported_execution_parameters
+    )
+    _kickoff_hpc_job(ctx, cmd, hardware_option, **scheduler_kwargs)
 
 
 def _filter_exec_kwargs(kwargs, func, hardware_option):

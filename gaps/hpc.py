@@ -346,7 +346,8 @@ class PBS(HpcJobManager):
         """Check whether the job is submitted/running"""
         return self.check_status_using_job_name(name) in {"Q", "R"}
 
-    def make_script_str(  # ruff:ignore[no-self-use, too-many-arguments, too-many-positional-arguments]
+    # ruff:ignore[no-self-use, too-many-arguments, too-many-positional-arguments]
+    def make_script_str(
         self,
         name,
         cmd,
@@ -359,6 +360,8 @@ class PBS(HpcJobManager):
         stdout_path=DEFAULT_STDOUT_PATH,
         conda_env=None,
         sh_script=None,
+        cli_name=None,
+        exported_execution_parameters=None,
     ):
         """Generate the PBS submission script.
 
@@ -392,6 +395,12 @@ class PBS(HpcJobManager):
             Conda environment to activate. By default, `None`.
         sh_script : str, optional
             Script to run before executing command. By default, `None`.
+        cli_name : str, optional
+            CLI name used to prefix exported execution parameter
+            environment variables. By default, `None`.
+        exported_execution_parameters : dict, optional
+            Execution parameters to export as environment variables. By
+            default, `None`.
 
         Returns
         -------
@@ -418,6 +427,9 @@ class PBS(HpcJobManager):
             # cspell:disable-next-line
             f"#PBS -e {stdout_path}/{name}_$PBS_JOBID.e",
             f"#PBS -l {features}" if features else "",
+            format_exports(
+                cli_name, exported_execution_parameters, job_name=name
+            ),
             format_env(conda_env),
             # cspell:disable-next-line
             "echo Running on: $HOSTNAME, Machine Type: $MACHTYPE",
@@ -472,7 +484,8 @@ class SLURM(HpcJobManager):
         """Check whether the job is submitted/running"""
         return self.check_status_using_job_name(name) is not None
 
-    def make_script_str(  # ruff:ignore[no-self-use]
+    # ruff:ignore[no-self-use, too-many-arguments, too-many-positional-arguments]
+    def make_script_str(
         self,
         name,
         cmd,
@@ -484,6 +497,8 @@ class SLURM(HpcJobManager):
         stdout_path=DEFAULT_STDOUT_PATH,
         conda_env=None,
         sh_script=None,
+        cli_name=None,
+        exported_execution_parameters=None,
     ):
         """Generate the SLURM submission script.
 
@@ -516,6 +531,12 @@ class SLURM(HpcJobManager):
             Conda environment to activate. By default, `None`.
         sh_script : str, optional
             Script to run before executing command. By default, `None`.
+        cli_name : str, optional
+            CLI name used to prefix exported execution parameter
+            environment variables. By default, `None`.
+        exported_execution_parameters : dict, optional
+            Execution parameters to export as environment variables. By
+            default, `None`.
 
         Returns
         -------
@@ -536,6 +557,9 @@ class SLURM(HpcJobManager):
             f"#SBATCH --qos={qos}",
             f"#SBATCH {feature}  # extra feature" if feature else "",
             f"#SBATCH --mem={memory}  # node RAM in MB" if memory else "",
+            format_exports(
+                cli_name, exported_execution_parameters, job_name=name
+            ),
             format_env(conda_env),
             # cspell:disable-next-line
             "echo Running on: $HOSTNAME, Machine Type: $MACHTYPE",
@@ -544,6 +568,29 @@ class SLURM(HpcJobManager):
             cmd,
         ]
         return "\n".join(filter(None, script_args))
+
+
+def format_exports(
+    cli_name=None, exported_execution_parameters=None, job_name=None
+):
+    """Format job metadata as shell environment exports."""
+    if not cli_name:
+        return ""
+
+    prefix = re.sub(r"\W", "_", str(cli_name).upper())
+    if prefix[0].isdigit():
+        prefix = f"_{prefix}"
+
+    exported_execution_parameters = dict(exported_execution_parameters or {})
+    if job_name is not None:
+        exported_execution_parameters["job_name"] = job_name
+
+    exports = []
+    for name, value in exported_execution_parameters.items():
+        env_name = re.sub(r"\W", "_", str(name).upper())
+        exports.append(f"export {prefix}_{env_name}={shlex.quote(str(value))}")
+
+    return "\n".join(exports)
 
 
 def make_sh(fname, script):
