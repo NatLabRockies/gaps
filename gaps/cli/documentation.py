@@ -390,9 +390,16 @@ Parameters
             which submits all node jobs.
 
         Only the `option` key is required for local execution. For
-        execution on the HPC, the `allocation` and `walltime` keys are also
-        required. All other options are populated with default values,
-        as seen above.
+        execution on the HPC, the `allocation` and `walltime` keys are
+        also required. All other options are populated with default
+        values, as seen above. For HPC runs, configured execution
+        parameters are also exported to the job environment. Variable
+        names are uppercase and prefixed with the CLI name;
+        non-alphanumeric characters are replaced by underscores. For
+        example, the ``walltime`` parameter for a CLI named ``reV`` is
+        available as ``REV_WALLTIME``. These variables can be used by
+        ``sh_script`` or by the command running on the node. The
+        submitted job name is also available as ``REV_JOB_NAME``.
     log_directory : str
         Path to directory where logs should be written. Path can be relative
         and does not have to exist on disk (it will be created if missing).
