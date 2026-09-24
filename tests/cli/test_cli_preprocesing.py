@@ -123,7 +123,9 @@ def test_preprocess_collect_config_pipeline_input(tmp_path):
     allowed_out_fn = {"pattern.h5", "another_pattern.h5"}
     assert len(config["_out_path"]) == 2
     assert len(config["_pattern"]) == 2
-    for out_fp, pattern in zip(config["_out_path"], config["_pattern"]):
+    for out_fp, pattern in zip(
+        config["_out_path"], config["_pattern"], strict=True
+    ):
         assert any(name in out_fp for name in allowed_out_fn)
         assert out_fp == pattern.replace(f"{TAG}*", "")
 
@@ -155,7 +157,7 @@ def test_preprocess_collect_config_pipeline_input_ignores_untagged_file(
 
     matched_files = sorted(
         Path(path)
-        for path in glob.glob(config["_pattern"][0])  # noqa
+        for path in glob.glob(config["_pattern"][0])  # ruff: ignore[glob]
     )
     assert matched_files == [job_file]
 
