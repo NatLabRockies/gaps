@@ -36,7 +36,7 @@ jobs:
           args: format --check
           src: "./gaps"
       - name: Check Python Code Complexity (Complexipy)
-        uses: rohaquinlop/complexipy-action@e2b05bcc06d899a24e2b6bb8b1354ac42800a95e # v7.0.1
+        uses: rohaquinlop/complexipy-action@63fb17c5ff7b578935d3eb9982c46c3ca856431b # v8.2.0
         with:
           paths: "./gaps"
           max_complexity_allowed: 10
